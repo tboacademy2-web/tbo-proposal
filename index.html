@@ -852,6 +852,17 @@
   .auth-user-box strong{display:block;color:#fff;font-size:13px;margin-bottom:2px;}
   @media(max-width:520px){#auth-view{padding:1rem}.auth-card{padding:24px 20px}.auth-title{font-size:25px}}
 
+  /* HARD FRONTEND ACCESS LOCK: builder/preview stay hidden unless allowed email is verified */
+  body:not(.auth-ok) #view-builder,
+  body:not(.auth-ok) #view-preview {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  body.auth-ok #auth-view {
+    display: none !important;
+  }
+
 </style>
 </head>
 <body>
@@ -889,7 +900,7 @@
         Continue with Google
       </button>
 
-      <p class="auth-note">Use your authorized Firebase account to access the builder.</p>
+      <p class="auth-note">Only authorized account can access this builder.</p>
     </section>
   </div>
 </div>
@@ -1889,16 +1900,43 @@ renderTerms();
   const authUserEmail = document.getElementById('auth-user-email');
 
 
-  // ✅ RESTRICTED ACCESS: only these emails can open Proposal Builder
-  // Add/remove emails here whenever you want to control access.
-  const ALLOWED_EMAILS = [
-    'nikhilmfd24@gmail.com',
-    'aggarwalnikhil185@gmail.com'
-  ].map(email => email.trim().toLowerCase());
+  // ✅ STRICT ACCESS: only this email can open Proposal Builder
+  const ONLY_ALLOWED_EMAIL = 'tboacademy2@gmail.com';
+  let accessDeniedMessage = '';
+
+  function normalizeEmail(email){
+    return String(email || '').trim().toLowerCase();
+  }
 
   function isAllowedUser(user){
-    const email = (user?.email || '').trim().toLowerCase();
-    return ALLOWED_EMAILS.includes(email);
+    return !!user && normalizeEmail(user.email) === ONLY_ALLOWED_EMAIL;
+  }
+
+  function hideProtectedViews(){
+    document.body.classList.remove('auth-ok');
+    if(builderView) builderView.style.display = 'none';
+    if(previewView) previewView.style.display = 'none';
+  }
+
+  function showLoginView(message = ''){
+    hideProtectedViews();
+    if(authView) authView.style.display = 'flex';
+    if(authUserBox) authUserBox.style.display = 'none';
+    if(loginPassword) loginPassword.value = '';
+    if(message) showAuthError(message);
+  }
+
+  function showBuilderView(user){
+    document.body.classList.add('auth-ok');
+    if(authView) authView.style.display = 'none';
+    if(previewView) previewView.style.display = 'none';
+    if(builderView) builderView.style.display = 'block';
+
+    if(authUserBox){
+      authUserBox.style.display = 'block';
+      authUserName.textContent = user.displayName || 'Signed in';
+      authUserEmail.textContent = user.email || '';
+    }
   }
 
   function showAuthError(message){
@@ -1983,36 +2021,36 @@ renderTerms();
     await signOut(auth);
   });
 
+  // Default: protected content is hidden until Firebase confirms the exact allowed email.
+  hideProtectedViews();
+
   onAuthStateChanged(auth, async (user) => {
-    if(user){
-      if(!isAllowedUser(user)){
-        await signOut(auth);
+    hideProtectedViews();
 
-        builderView.style.display = 'none';
-        previewView.style.display = 'none';
-        authView.style.display = 'flex';
-        if(authUserBox) authUserBox.style.display = 'none';
-        loginPassword.value = '';
-
-        showAuthError('Access denied. This email is not authorized to use Proposal Builder.');
-        return;
-      }
-
-      authView.style.display = 'none';
-      previewView.style.display = 'none';
-      builderView.style.display = 'block';
-      if(authUserBox){
-        authUserBox.style.display = 'block';
-        authUserName.textContent = user.displayName || 'Signed in';
-        authUserEmail.textContent = user.email || '';
-      }
-    }else{
-      builderView.style.display = 'none';
-      previewView.style.display = 'none';
-      authView.style.display = 'flex';
+    if(!user){
+      if(authView) authView.style.display = 'flex';
       if(authUserBox) authUserBox.style.display = 'none';
-      loginPassword.value = '';
+      if(loginPassword) loginPassword.value = '';
+
+      if(accessDeniedMessage){
+        showAuthError(accessDeniedMessage);
+        accessDeniedMessage = '';
+      }else{
+        clearAuthError();
+      }
+      return;
     }
+
+    if(!isAllowedUser(user)){
+      const blockedEmail = user.email || 'This account';
+      accessDeniedMessage = `Access denied. ${blockedEmail} is not authorized to use Proposal Builder. Please sign in with ${ONLY_ALLOWED_EMAIL}.`;
+      await signOut(auth);
+      showLoginView(accessDeniedMessage);
+      return;
+    }
+
+    clearAuthError();
+    showBuilderView(user);
   });
 </script>
 
