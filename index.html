@@ -958,7 +958,7 @@
       </button>
       <button class="btn-export" onclick="showPreview()">
         <i class="fa-solid fa-eye"></i>
-        <span class="btn-label">Preview &amp; Export PDF</span>
+        <span class="btn-label">Preview &amp; Export Word</span>
       </button>
       <button class="btn-ghost" onclick="resetAll()">
         <i class="fa-solid fa-rotate-left"></i>
@@ -1122,9 +1122,9 @@
         <i class="fa-solid fa-arrow-left"></i>
         Back to Builder
       </button>
-      <button class="btn-print" onclick="exportOnePagePDF()">
-        <i class="fa-solid fa-file-pdf"></i>
-        Export PDF
+      <button class="btn-print" onclick="exportOnePageWord()">
+        <i class="fa-solid fa-file-word"></i>
+        Export Word
       </button>
     </div>
   </div>
@@ -1180,7 +1180,7 @@
 
 <div class="toast-container" id="toast-container"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 // ── STATE ──
@@ -1426,9 +1426,11 @@ function prepareOnePagePrint() {
   document.documentElement.style.setProperty('--print-scale', scale.toFixed(3));
 }
 
-async function exportOnePagePDF() {
-  // This uses html2pdf instead of browser print because CSS print scaling can still split pages.
-  // It captures the proposal preview as one A4 landscape PDF page.
+async function exportOnePageWord() {
+  // ✅ Guaranteed one-page Word export.
+  // It does NOT use window.print() and does NOT allow browser pagination.
+  // It converts the complete proposal into one image, then places that image on one A4 landscape Word page.
+  // Output is a Microsoft Word-compatible .doc file.
   buildPreview();
 
   const sourceDoc = document.querySelector('#view-preview .doc');
@@ -1439,8 +1441,8 @@ async function exportOnePagePDF() {
     return;
   }
 
-  if (typeof html2pdf === 'undefined') {
-    toast('PDF library not loaded. Check your internet connection or CDN access.', 'error');
+  if (typeof html2canvas === 'undefined') {
+    toast('Word export library not loaded. Run using localhost/Firebase Hosting and check internet.', 'error');
     return;
   }
 
@@ -1450,21 +1452,21 @@ async function exportOnePagePDF() {
     exportButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
   }
 
-  // A4 landscape ratio in screen pixels. Keeping height slightly under 794 avoids a blank/split 2nd page.
-  const pageWidth = 1122;
-  const pageHeight = 793;
+  // A4 landscape ratio. Bigger pixels = clearer Word image, still one page.
+  const PAGE_WIDTH_PX = 1600;
+  const PAGE_HEIGHT_PX = 1131;
 
-  const printPage = document.createElement('div');
-  printPage.id = 'pdf-one-page-export';
-  printPage.style.position = 'fixed';
-  printPage.style.left = '-10000px';
-  printPage.style.top = '0';
-  printPage.style.width = pageWidth + 'px';
-  printPage.style.height = pageHeight + 'px';
-  printPage.style.overflow = 'hidden';
-  printPage.style.background = '#ffffff';
-  printPage.style.margin = '0';
-  printPage.style.padding = '0';
+  const wordStage = document.createElement('div');
+  wordStage.id = 'word-one-page-stage';
+  wordStage.style.position = 'fixed';
+  wordStage.style.left = '-99999px';
+  wordStage.style.top = '0';
+  wordStage.style.width = PAGE_WIDTH_PX + 'px';
+  wordStage.style.height = PAGE_HEIGHT_PX + 'px';
+  wordStage.style.overflow = 'hidden';
+  wordStage.style.background = '#ffffff';
+  wordStage.style.margin = '0';
+  wordStage.style.padding = '0';
 
   const clone = sourceDoc.cloneNode(true);
   clone.style.margin = '0';
@@ -1475,55 +1477,128 @@ async function exportOnePagePDF() {
   clone.style.background = '#ffffff';
   clone.style.transformOrigin = 'top left';
 
-  printPage.appendChild(clone);
-  document.body.appendChild(printPage);
+  // Make the proposal compact before final scaling, without changing builder logic.
+  clone.querySelectorAll('.doc-header').forEach(el => el.style.padding = '12px 18px');
+  clone.querySelectorAll('.doc-header h1').forEach(el => { el.style.fontSize = '18px'; el.style.lineHeight = '1.15'; });
+  clone.querySelectorAll('.doc-header p, .h-meta').forEach(el => { el.style.fontSize = '9px'; el.style.lineHeight = '1.2'; });
+  clone.querySelectorAll('.meta-cell').forEach(el => el.style.padding = '7px 10px');
+  clone.querySelectorAll('.meta-label').forEach(el => { el.style.fontSize = '8px'; el.style.marginBottom = '2px'; });
+  clone.querySelectorAll('.meta-value').forEach(el => { el.style.fontSize = '9px'; el.style.lineHeight = '1.15'; });
+  clone.querySelectorAll('thead th').forEach(el => { el.style.fontSize = '8px'; el.style.padding = '3px 7px'; el.style.lineHeight = '1.12'; el.style.position = 'static'; });
+  clone.querySelectorAll('tbody td').forEach(el => { el.style.fontSize = '8px'; el.style.padding = '4px 7px'; el.style.lineHeight = '1.12'; });
+  clone.querySelectorAll('td.det, td.kpi').forEach(el => { el.style.fontSize = '7.4px'; el.style.lineHeight = '1.12'; });
+  clone.querySelectorAll('td.tp').forEach(el => { el.style.fontSize = '8px'; el.style.lineHeight = '1.12'; });
+  clone.querySelectorAll('td.cat').forEach(el => { el.style.fontSize = '7px'; el.style.padding = '4px 5px'; el.style.lineHeight = '1.1'; });
+  clone.querySelectorAll('td.amt').forEach(el => { el.style.fontSize = '7.8px'; el.style.whiteSpace = 'nowrap'; });
+  clone.querySelectorAll('.totals-row td').forEach(el => { el.style.fontSize = '8px'; el.style.padding = '5px 7px'; el.style.lineHeight = '1.1'; });
+  clone.querySelectorAll('.doc-footer').forEach(el => el.style.padding = '7px 14px');
+  clone.querySelectorAll('.footer-note, .footer-sig').forEach(el => { el.style.fontSize = '7.5px'; el.style.lineHeight = '1.12'; });
+  clone.querySelectorAll('.footer-sig strong').forEach(el => el.style.fontSize = '8.2px');
 
-  // Wait for browser to calculate the cloned document height.
-  await new Promise(resolve => requestAnimationFrame(resolve));
-
-  const naturalWidth = Math.max(clone.scrollWidth, clone.offsetWidth, 1140);
-  const naturalHeight = Math.max(clone.scrollHeight, clone.offsetHeight, 1);
-  const scale = Math.min(pageWidth / naturalWidth, pageHeight / naturalHeight, 1);
-
-  clone.style.transform = `scale(${scale})`;
-
-  const filenameBase = (v('f-client') || 'proposal-builder')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'proposal-builder';
-
-  const options = {
-    margin: 0,
-    filename: `${filenameBase}-proposal.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff',
-      logging: false,
-      scrollX: 0,
-      scrollY: 0,
-      windowWidth: pageWidth,
-      windowHeight: pageHeight
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'landscape',
-      compress: true
-    },
-    pagebreak: { mode: [] }
-  };
+  wordStage.appendChild(clone);
+  document.body.appendChild(wordStage);
 
   try {
-    await html2pdf().set(options).from(printPage).save();
-    toast('PDF exported on one page', 'success');
+    // Wait for layout + fonts before measuring.
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    const naturalWidth = Math.max(clone.scrollWidth, clone.offsetWidth, 1);
+    const naturalHeight = Math.max(clone.scrollHeight, clone.offsetHeight, 1);
+
+    // This is the key: scale complete proposal to fit inside one A4 landscape page.
+    const scaleToFit = Math.min(PAGE_WIDTH_PX / naturalWidth, PAGE_HEIGHT_PX / naturalHeight);
+    clone.style.transform = `scale(${scaleToFit})`;
+
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    const canvas = await html2canvas(wordStage, {
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      scale: 2,
+      width: PAGE_WIDTH_PX,
+      height: PAGE_HEIGHT_PX,
+      windowWidth: PAGE_WIDTH_PX,
+      windowHeight: PAGE_HEIGHT_PX,
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    const base64Image = imgData.replace(/^data:image\/jpeg;base64,/, '');
+    const boundary = '----=_NextPart_ProposalBuilder_' + Date.now();
+
+    // Word-compatible MHTML document. The proposal is embedded as one full-page image.
+    // Page size is A4 landscape: 841.95pt × 595.35pt.
+    const wordHtml = `
+<html xmlns:o='urn:schemas-microsoft-com:office:office'
+      xmlns:w='urn:schemas-microsoft-com:office:word'
+      xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+  <meta charset='utf-8'>
+  <title>Proposal Builder</title>
+  <style>
+    @page Section1 {
+      size: 841.95pt 595.35pt;
+      margin: 0pt 0pt 0pt 0pt;
+      mso-page-orientation: landscape;
+    }
+    div.Section1 { page: Section1; }
+    body { margin: 0; padding: 0; background: #ffffff; }
+    img.proposal-page {
+      display: block;
+      width: 841.95pt;
+      height: 595.35pt;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class='Section1'>
+    <img class='proposal-page' src='proposal-page.jpg' alt='Proposal Builder'>
+  </div>
+</body>
+</html>`;
+
+    const mhtml = `MIME-Version: 1.0\r\n` +
+      `Content-Type: multipart/related; boundary="${boundary}"\r\n\r\n` +
+      `--${boundary}\r\n` +
+      `Content-Type: text/html; charset="utf-8"\r\n` +
+      `Content-Location: proposal.html\r\n\r\n` +
+      wordHtml + `\r\n\r\n` +
+      `--${boundary}\r\n` +
+      `Content-Type: image/jpeg\r\n` +
+      `Content-Transfer-Encoding: base64\r\n` +
+      `Content-Location: proposal-page.jpg\r\n\r\n` +
+      base64Image + `\r\n` +
+      `--${boundary}--`;
+
+    const blob = new Blob(['\ufeff', mhtml], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+
+    const filenameBase = (v('f-client') || 'proposal-builder')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'proposal-builder';
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filenameBase}-proposal.doc`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    toast('Word file exported as one page', 'success');
   } catch (err) {
     console.error(err);
-    toast('PDF export failed. Please check console for details.', 'error');
+    toast('Word export failed. Open Console for error details.', 'error');
   } finally {
-    printPage.remove();
+    wordStage.remove();
     if (exportButton) {
       exportButton.disabled = false;
       exportButton.innerHTML = oldButtonHTML;
