@@ -1180,6 +1180,8 @@
 
 <div class="toast-container" id="toast-container"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <script>
 // ── STATE ──
 let currency = 'USD';
@@ -1424,9 +1426,109 @@ function prepareOnePagePrint() {
   document.documentElement.style.setProperty('--print-scale', scale.toFixed(3));
 }
 
-function exportOnePagePDF() {
-  prepareOnePagePrint();
-  setTimeout(() => window.print(), 80);
+async function exportOnePagePDF() {
+  // This uses html2pdf instead of browser print because CSS print scaling can still split pages.
+  // It captures the proposal preview as one A4 landscape PDF page.
+  buildPreview();
+
+  const sourceDoc = document.querySelector('#view-preview .doc');
+  const exportButton = document.querySelector('.btn-print');
+
+  if (!sourceDoc) {
+    toast('Preview document not found', 'error');
+    return;
+  }
+
+  if (typeof html2pdf === 'undefined') {
+    toast('PDF library not loaded. Check your internet connection or CDN access.', 'error');
+    return;
+  }
+
+  const oldButtonHTML = exportButton ? exportButton.innerHTML : '';
+  if (exportButton) {
+    exportButton.disabled = true;
+    exportButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
+  }
+
+  // A4 landscape ratio in screen pixels. Keeping height slightly under 794 avoids a blank/split 2nd page.
+  const pageWidth = 1122;
+  const pageHeight = 793;
+
+  const printPage = document.createElement('div');
+  printPage.id = 'pdf-one-page-export';
+  printPage.style.position = 'fixed';
+  printPage.style.left = '-10000px';
+  printPage.style.top = '0';
+  printPage.style.width = pageWidth + 'px';
+  printPage.style.height = pageHeight + 'px';
+  printPage.style.overflow = 'hidden';
+  printPage.style.background = '#ffffff';
+  printPage.style.margin = '0';
+  printPage.style.padding = '0';
+
+  const clone = sourceDoc.cloneNode(true);
+  clone.style.margin = '0';
+  clone.style.boxShadow = 'none';
+  clone.style.borderRadius = '0';
+  clone.style.maxWidth = 'none';
+  clone.style.width = '1140px';
+  clone.style.background = '#ffffff';
+  clone.style.transformOrigin = 'top left';
+
+  printPage.appendChild(clone);
+  document.body.appendChild(printPage);
+
+  // Wait for browser to calculate the cloned document height.
+  await new Promise(resolve => requestAnimationFrame(resolve));
+
+  const naturalWidth = Math.max(clone.scrollWidth, clone.offsetWidth, 1140);
+  const naturalHeight = Math.max(clone.scrollHeight, clone.offsetHeight, 1);
+  const scale = Math.min(pageWidth / naturalWidth, pageHeight / naturalHeight, 1);
+
+  clone.style.transform = `scale(${scale})`;
+
+  const filenameBase = (v('f-client') || 'proposal-builder')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'proposal-builder';
+
+  const options = {
+    margin: 0,
+    filename: `${filenameBase}-proposal.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: pageWidth,
+      windowHeight: pageHeight
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'landscape',
+      compress: true
+    },
+    pagebreak: { mode: [] }
+  };
+
+  try {
+    await html2pdf().set(options).from(printPage).save();
+    toast('PDF exported on one page', 'success');
+  } catch (err) {
+    console.error(err);
+    toast('PDF export failed. Please check console for details.', 'error');
+  } finally {
+    printPage.remove();
+    if (exportButton) {
+      exportButton.disabled = false;
+      exportButton.innerHTML = oldButtonHTML;
+    }
+  }
 }
 
 window.addEventListener('beforeprint', prepareOnePagePrint);
