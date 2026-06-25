@@ -589,26 +589,228 @@
   }
 
   /* ══════════════════════════════
-     PRINT STYLES
+     PRINT STYLES - ONE PAGE PDF
   ══════════════════════════════ */
   @media print {
-    @page{margin:1cm 1.3cm;size:A4 landscape;}
-    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    body{background:white;padding:0;}
-    #view-builder{display:none !important;}
-    #view-preview{display:block !important;padding:0;background:white;}
-    .preview-toolbar{display:none;}
-    .doc{border:none;border-radius:0;max-width:100%;}
-    #view-preview .doc tbody tr.cat-stripe-a{background:var(--white) !important;}
-    #view-preview .doc tbody tr.cat-stripe-b{background:var(--bg-subtle) !important;}
-    #view-preview .doc td.cat{background:var(--orange-light) !important;border:1px solid #F5D0B8 !important;}
-    #view-preview .doc td.cat.cat-stripe-b{background:#FFE8D6 !important;border-color:#F0C9A8 !important;}
-    #view-preview .doc-table-scroll{max-height:none;overflow:visible;}
-    #view-preview .totals-row td{background:var(--blue) !important;}
-    #view-preview .doc-header{background:var(--blue) !important;}
-    #view-preview .doc thead tr{background:var(--blue) !important;}
-    #view-preview .doc-footer{background:var(--bg-subtle) !important;}
-    
+    @page {
+      size: A4 landscape;
+      margin: 0;
+    }
+
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    html,
+    body {
+      width: 297mm !important;
+      height: 210mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      background: #ffffff !important;
+    }
+
+    body * {
+      visibility: hidden !important;
+    }
+
+    #view-preview,
+    #view-preview * {
+      visibility: visible !important;
+    }
+
+    #auth-view,
+    #view-builder,
+    .preview-toolbar {
+      display: none !important;
+      visibility: hidden !important;
+    }
+
+    #view-preview {
+      display: block !important;
+      position: fixed !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 297mm !important;
+      height: 210mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      overflow: hidden !important;
+    }
+
+    #view-preview .doc {
+      width: 1140px !important;
+      max-width: 1140px !important;
+      margin: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      overflow: visible !important;
+      transform: scale(var(--print-scale, 0.62)) !important;
+      transform-origin: top left !important;
+    }
+
+    #view-preview .doc-header {
+      background: var(--blue) !important;
+      padding: 10px 16px !important;
+      gap: 1rem !important;
+    }
+
+    #view-preview .doc-header h1 {
+      font-size: 16px !important;
+      line-height: 1.12 !important;
+    }
+
+    #view-preview .doc-header p,
+    #view-preview .h-meta {
+      font-size: 8px !important;
+      line-height: 1.15 !important;
+    }
+
+    #view-preview .doc-header-right {
+      gap: 3px !important;
+    }
+
+    #view-preview .doc-header > div:first-child::before {
+      width: 86px !important;
+      height: 26px !important;
+      margin-bottom: 5px !important;
+    }
+
+    #view-preview .meta-cell {
+      padding: 5px 8px !important;
+    }
+
+    #view-preview .meta-label {
+      font-size: 7.5px !important;
+      margin-bottom: 1px !important;
+      line-height: 1.1 !important;
+    }
+
+    #view-preview .meta-value,
+    #view-preview .meta-value.coral {
+      font-size: 8.5px !important;
+      line-height: 1.1 !important;
+    }
+
+    #view-preview .doc-table-scroll {
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    #view-preview .doc table {
+      width: 100% !important;
+      table-layout: fixed !important;
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+    }
+
+    #view-preview .doc thead tr {
+      background: var(--blue) !important;
+    }
+
+    #view-preview .doc thead th {
+      background: var(--blue) !important;
+      color: #ffffff !important;
+      font-size: 7.5px !important;
+      padding: 3px 6px !important;
+      line-height: 1.1 !important;
+      position: static !important;
+      box-shadow: none !important;
+    }
+
+    #view-preview .doc tbody tr.cat-stripe-a {
+      background: var(--white) !important;
+    }
+
+    #view-preview .doc tbody tr.cat-stripe-b {
+      background: var(--bg-subtle) !important;
+    }
+
+    #view-preview .doc tbody td {
+      font-size: 7.8px !important;
+      padding: 3.5px 6px !important;
+      line-height: 1.12 !important;
+      vertical-align: top !important;
+    }
+
+    #view-preview .doc td.cat {
+      background: var(--orange-light) !important;
+      border: 1px solid #F5D0B8 !important;
+      font-size: 7px !important;
+      line-height: 1.08 !important;
+      padding: 3px 4px !important;
+    }
+
+    #view-preview .doc td.cat.cat-stripe-b {
+      background: #FFE8D6 !important;
+      border-color: #F0C9A8 !important;
+    }
+
+    #view-preview .doc td.tp {
+      font-size: 8px !important;
+      line-height: 1.1 !important;
+    }
+
+    #view-preview .doc td.det,
+    #view-preview .doc td.kpi {
+      font-size: 7.2px !important;
+      line-height: 1.12 !important;
+    }
+
+    #view-preview .doc td.amt {
+      font-size: 7.5px !important;
+      white-space: nowrap !important;
+    }
+
+    #view-preview .p-foc {
+      font-size: 6.5px !important;
+      padding: 1px 4px !important;
+      line-height: 1.1 !important;
+    }
+
+    #view-preview .totals-row td {
+      background: var(--blue) !important;
+      color: #ffffff !important;
+      font-size: 8px !important;
+      padding: 4px 6px !important;
+      line-height: 1.1 !important;
+    }
+
+    #view-preview .totals-row .amt.cl {
+      color: #ffba91 !important;
+      font-weight: 700 !important;
+    }
+
+    #view-preview .totals-row .amt.ag {
+      color: var(--blue-light) !important;
+      font-weight: 600 !important;
+    }
+
+    #view-preview .doc-footer {
+      background: var(--bg-subtle) !important;
+      padding: 5px 12px !important;
+      border-top: 1px solid var(--border) !important;
+    }
+
+    #view-preview .footer-note,
+    #view-preview .footer-sig {
+      font-size: 7px !important;
+      line-height: 1.1 !important;
+    }
+
+    #view-preview .footer-sig strong {
+      font-size: 8px !important;
+      margin-bottom: 1px !important;
+    }
+
+    .doc-table-scroll tr td:not(:first-child),
+    .doc-table-scroll .tp {
+      border-bottom: 1px solid #e2e2e2 !important;
+    }
   }
 
   .doc-table-scroll tr td:not(:first-child), .doc-table-scroll .tp{
@@ -920,7 +1122,7 @@
         <i class="fa-solid fa-arrow-left"></i>
         Back to Builder
       </button>
-      <button class="btn-print" onclick="window.print()">
+      <button class="btn-print" onclick="exportOnePagePDF()">
         <i class="fa-solid fa-file-pdf"></i>
         Export PDF
       </button>
@@ -1204,6 +1406,34 @@ function backToBuilder() {
   window.scrollTo(0,0);
 }
 
+function prepareOnePagePrint() {
+  const doc = document.querySelector('#view-preview .doc');
+  if (!doc) return;
+
+  // A4 landscape at browser print CSS pixel approximation
+  const pageWidth = 1122;
+  const pageHeight = 794;
+  const docWidth = Math.max(doc.scrollWidth, doc.offsetWidth, 1140);
+  const docHeight = Math.max(doc.scrollHeight, doc.offsetHeight, 1000);
+
+  // Keep the proposal on one page without changing proposal logic.
+  // Compact print CSS handles most height reduction; this scale handles remaining overflow.
+  let scale = Math.min(pageWidth / docWidth, pageHeight / docHeight, 0.74);
+  scale = Math.max(0.42, Math.min(scale, 0.74));
+
+  document.documentElement.style.setProperty('--print-scale', scale.toFixed(3));
+}
+
+function exportOnePagePDF() {
+  prepareOnePagePrint();
+  setTimeout(() => window.print(), 80);
+}
+
+window.addEventListener('beforeprint', prepareOnePagePrint);
+window.addEventListener('afterprint', () => {
+  document.documentElement.style.removeProperty('--print-scale');
+});
+
 function buildPreview() {
   // Header
   document.getElementById('p-title').textContent = v('f-title') || 'Campaign Proposal';
@@ -1371,6 +1601,19 @@ renderTerms();
   const authUserName = document.getElementById('auth-user-name');
   const authUserEmail = document.getElementById('auth-user-email');
 
+
+  // ✅ RESTRICTED ACCESS: only these emails can open Proposal Builder
+  // Add/remove emails here whenever you want to control access.
+  const ALLOWED_EMAILS = [
+    'nikhilmfd24@gmail.com',
+    'aggarwalnikhil185@gmail.com'
+  ].map(email => email.trim().toLowerCase());
+
+  function isAllowedUser(user){
+    const email = (user?.email || '').trim().toLowerCase();
+    return ALLOWED_EMAILS.includes(email);
+  }
+
   function showAuthError(message){
     authError.textContent = message;
     authError.style.display = 'block';
@@ -1453,8 +1696,21 @@ renderTerms();
     await signOut(auth);
   });
 
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if(user){
+      if(!isAllowedUser(user)){
+        await signOut(auth);
+
+        builderView.style.display = 'none';
+        previewView.style.display = 'none';
+        authView.style.display = 'flex';
+        if(authUserBox) authUserBox.style.display = 'none';
+        loginPassword.value = '';
+
+        showAuthError('Access denied. This email is not authorized to use Proposal Builder.');
+        return;
+      }
+
       authView.style.display = 'none';
       previewView.style.display = 'none';
       builderView.style.display = 'block';
