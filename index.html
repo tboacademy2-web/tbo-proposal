@@ -1122,9 +1122,9 @@
         <i class="fa-solid fa-arrow-left"></i>
         Back to Builder
       </button>
-      <button class="btn-print" onclick="exportOnePageWord()">
+      <button class="btn-print" onclick="exportWordDocx()">
         <i class="fa-solid fa-file-word"></i>
-        Export Word
+        Export Word (.docx)
       </button>
     </div>
   </div>
@@ -1181,6 +1181,7 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 
 <script>
 // ── STATE ──
@@ -1426,179 +1427,288 @@ function prepareOnePagePrint() {
   document.documentElement.style.setProperty('--print-scale', scale.toFixed(3));
 }
 
-async function exportOnePageWord() {
-  // ✅ Guaranteed one-page Word export.
-  // It does NOT use window.print() and does NOT allow browser pagination.
-  // It converts the complete proposal into one image, then places that image on one A4 landscape Word page.
-  // Output is a Microsoft Word-compatible .doc file.
+async function exportWordDocx() {
+  // ✅ Real Microsoft Word export (.docx)
+  // This does NOT use PDF, canvas, browser print, or image-only export.
+  // The proposal is exported as editable Word text + table.
   buildPreview();
 
-  const sourceDoc = document.querySelector('#view-preview .doc');
   const exportButton = document.querySelector('.btn-print');
 
-  if (!sourceDoc) {
-    toast('Preview document not found', 'error');
-    return;
-  }
-
-  if (typeof html2canvas === 'undefined') {
-    toast('Word export library not loaded. Run using localhost/Firebase Hosting and check internet.', 'error');
+  if (!window.docx) {
+    toast('DOCX export library not loaded. Use localhost/Firebase Hosting and check internet.', 'error');
     return;
   }
 
   const oldButtonHTML = exportButton ? exportButton.innerHTML : '';
   if (exportButton) {
     exportButton.disabled = true;
-    exportButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
+    exportButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting DOCX...';
   }
 
-  // A4 landscape ratio. Bigger pixels = clearer Word image, still one page.
-  const PAGE_WIDTH_PX = 1600;
-  const PAGE_HEIGHT_PX = 1131;
-
-  const wordStage = document.createElement('div');
-  wordStage.id = 'word-one-page-stage';
-  wordStage.style.position = 'fixed';
-  wordStage.style.left = '-99999px';
-  wordStage.style.top = '0';
-  wordStage.style.width = PAGE_WIDTH_PX + 'px';
-  wordStage.style.height = PAGE_HEIGHT_PX + 'px';
-  wordStage.style.overflow = 'hidden';
-  wordStage.style.background = '#ffffff';
-  wordStage.style.margin = '0';
-  wordStage.style.padding = '0';
-
-  const clone = sourceDoc.cloneNode(true);
-  clone.style.margin = '0';
-  clone.style.boxShadow = 'none';
-  clone.style.borderRadius = '0';
-  clone.style.maxWidth = 'none';
-  clone.style.width = '1140px';
-  clone.style.background = '#ffffff';
-  clone.style.transformOrigin = 'top left';
-
-  // Make the proposal compact before final scaling, without changing builder logic.
-  clone.querySelectorAll('.doc-header').forEach(el => el.style.padding = '12px 18px');
-  clone.querySelectorAll('.doc-header h1').forEach(el => { el.style.fontSize = '18px'; el.style.lineHeight = '1.15'; });
-  clone.querySelectorAll('.doc-header p, .h-meta').forEach(el => { el.style.fontSize = '9px'; el.style.lineHeight = '1.2'; });
-  clone.querySelectorAll('.meta-cell').forEach(el => el.style.padding = '7px 10px');
-  clone.querySelectorAll('.meta-label').forEach(el => { el.style.fontSize = '8px'; el.style.marginBottom = '2px'; });
-  clone.querySelectorAll('.meta-value').forEach(el => { el.style.fontSize = '9px'; el.style.lineHeight = '1.15'; });
-  clone.querySelectorAll('thead th').forEach(el => { el.style.fontSize = '8px'; el.style.padding = '3px 7px'; el.style.lineHeight = '1.12'; el.style.position = 'static'; });
-  clone.querySelectorAll('tbody td').forEach(el => { el.style.fontSize = '8px'; el.style.padding = '4px 7px'; el.style.lineHeight = '1.12'; });
-  clone.querySelectorAll('td.det, td.kpi').forEach(el => { el.style.fontSize = '7.4px'; el.style.lineHeight = '1.12'; });
-  clone.querySelectorAll('td.tp').forEach(el => { el.style.fontSize = '8px'; el.style.lineHeight = '1.12'; });
-  clone.querySelectorAll('td.cat').forEach(el => { el.style.fontSize = '7px'; el.style.padding = '4px 5px'; el.style.lineHeight = '1.1'; });
-  clone.querySelectorAll('td.amt').forEach(el => { el.style.fontSize = '7.8px'; el.style.whiteSpace = 'nowrap'; });
-  clone.querySelectorAll('.totals-row td').forEach(el => { el.style.fontSize = '8px'; el.style.padding = '5px 7px'; el.style.lineHeight = '1.1'; });
-  clone.querySelectorAll('.doc-footer').forEach(el => el.style.padding = '7px 14px');
-  clone.querySelectorAll('.footer-note, .footer-sig').forEach(el => { el.style.fontSize = '7.5px'; el.style.lineHeight = '1.12'; });
-  clone.querySelectorAll('.footer-sig strong').forEach(el => el.style.fontSize = '8.2px');
-
-  wordStage.appendChild(clone);
-  document.body.appendChild(wordStage);
-
   try {
-    // Wait for layout + fonts before measuring.
-    if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    const {
+      Document: DocxDocument,
+      Packer,
+      Paragraph,
+      TextRun,
+      Table,
+      TableRow,
+      TableCell,
+      WidthType,
+      AlignmentType,
+      BorderStyle,
+      VerticalAlign,
+      PageOrientation,
+      ShadingType
+    } = window.docx;
 
-    const naturalWidth = Math.max(clone.scrollWidth, clone.offsetWidth, 1);
-    const naturalHeight = Math.max(clone.scrollHeight, clone.offsetHeight, 1);
+    const BLUE = '1E6FD9';
+    const ORANGE = 'FF6A13';
+    const ORANGE_LIGHT = 'FFF4EC';
+    const BLUE_LIGHT = 'E8F2FF';
+    const BORDER = 'D9E2EC';
+    const WHITE = 'FFFFFF';
+    const TEXT = '0F172A';
+    const MUTED = '475569';
 
-    // This is the key: scale complete proposal to fit inside one A4 landscape page.
-    const scaleToFit = Math.min(PAGE_WIDTH_PX / naturalWidth, PAGE_HEIGHT_PX / naturalHeight);
-    clone.style.transform = `scale(${scaleToFit})`;
+    const clean = (value) => String(value ?? '')
+      .replace(/\s+/g, ' ')
+      .replace(/[<>]/g, '')
+      .trim();
 
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    const rupeeSafe = (value) => clean(value).replace(/₹/g, 'INR ');
 
-    const canvas = await html2canvas(wordStage, {
-      backgroundColor: '#ffffff',
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      scale: 2,
-      width: PAGE_WIDTH_PX,
-      height: PAGE_HEIGHT_PX,
-      windowWidth: PAGE_WIDTH_PX,
-      windowHeight: PAGE_HEIGHT_PX,
-      scrollX: 0,
-      scrollY: 0
+    const tiny = 12;      // 6 pt
+    const bodySize = 13;  // 6.5 pt
+    const small = 14;     // 7 pt
+    const normal = 16;    // 8 pt
+    const titleSize = 24; // 12 pt
+
+    const run = (text, opts = {}) => new TextRun({
+      text: rupeeSafe(text || ''),
+      bold: !!opts.bold,
+      italics: !!opts.italics,
+      color: opts.color || TEXT,
+      size: opts.size || bodySize,
+      font: 'Inter'
     });
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
-    const base64Image = imgData.replace(/^data:image\/jpeg;base64,/, '');
-    const boundary = '----=_NextPart_ProposalBuilder_' + Date.now();
+    const para = (text, opts = {}) => new Paragraph({
+      children: [run(text, opts)],
+      alignment: opts.alignment || AlignmentType.LEFT,
+      spacing: { before: opts.before || 0, after: opts.after || 0, line: opts.line || 180 },
+    });
 
-    // Word-compatible MHTML document. The proposal is embedded as one full-page image.
-    // Page size is A4 landscape: 841.95pt × 595.35pt.
-    const wordHtml = `
-<html xmlns:o='urn:schemas-microsoft-com:office:office'
-      xmlns:w='urn:schemas-microsoft-com:office:word'
-      xmlns='http://www.w3.org/TR/REC-html40'>
-<head>
-  <meta charset='utf-8'>
-  <title>Proposal Builder</title>
-  <style>
-    @page Section1 {
-      size: 841.95pt 595.35pt;
-      margin: 0pt 0pt 0pt 0pt;
-      mso-page-orientation: landscape;
-    }
-    div.Section1 { page: Section1; }
-    body { margin: 0; padding: 0; background: #ffffff; }
-    img.proposal-page {
-      display: block;
-      width: 841.95pt;
-      height: 595.35pt;
-      margin: 0;
-      padding: 0;
-      border: 0;
-    }
-  </style>
-</head>
-<body>
-  <div class='Section1'>
-    <img class='proposal-page' src='proposal-page.jpg' alt='Proposal Builder'>
-  </div>
-</body>
-</html>`;
+    const cell = (text, opts = {}) => new TableCell({
+      width: opts.width ? { size: opts.width, type: WidthType.PERCENTAGE } : undefined,
+      verticalAlign: opts.vAlign || VerticalAlign.CENTER,
+      shading: opts.shading ? { type: ShadingType.CLEAR, fill: opts.shading } : undefined,
+      margins: {
+        top: opts.marginTop ?? 45,
+        bottom: opts.marginBottom ?? 45,
+        left: opts.marginLeft ?? 70,
+        right: opts.marginRight ?? 70,
+      },
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 1, color: opts.border || BORDER },
+        bottom: { style: BorderStyle.SINGLE, size: 1, color: opts.border || BORDER },
+        left: { style: BorderStyle.SINGLE, size: 1, color: opts.border || BORDER },
+        right: { style: BorderStyle.SINGLE, size: 1, color: opts.border || BORDER },
+      },
+      children: [para(text, {
+        bold: opts.bold,
+        color: opts.color || TEXT,
+        size: opts.size || bodySize,
+        alignment: opts.alignment || AlignmentType.LEFT,
+        line: opts.line || 160,
+      })],
+    });
 
-    const mhtml = `MIME-Version: 1.0\r\n` +
-      `Content-Type: multipart/related; boundary="${boundary}"\r\n\r\n` +
-      `--${boundary}\r\n` +
-      `Content-Type: text/html; charset="utf-8"\r\n` +
-      `Content-Location: proposal.html\r\n\r\n` +
-      wordHtml + `\r\n\r\n` +
-      `--${boundary}\r\n` +
-      `Content-Type: image/jpeg\r\n` +
-      `Content-Transfer-Encoding: base64\r\n` +
-      `Content-Location: proposal-page.jpg\r\n\r\n` +
-      base64Image + `\r\n` +
-      `--${boundary}--`;
+    const blankPara = new Paragraph({ spacing: { after: 45 } });
 
-    const blob = new Blob(['\ufeff', mhtml], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
+    const client = clean(v('f-client')) || '—';
+    const markets = clean(v('f-markets')) || '—';
+    const period = clean(v('f-period')) || '—';
+    const agency = clean(v('f-agency')) || 'TBO Academy';
+    const agencyName = clean(v('f-aname')) || agency;
+    const agencyEmail = clean(v('f-aemail')) || '';
+    const proposalDateRaw = v('f-pdate');
+    const proposalDate = proposalDateRaw
+      ? new Date(proposalDateRaw).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
+    const paidServices = services.filter(s => !s.foc);
+    const totalClient = paidServices.reduce((a, s) => a + Number(s.client || 0), 0);
+    const totalAgency = paidServices.reduce((a, s) => a + Number(s.agency || 0), 0);
+    const totalBudget = totalClient + totalAgency;
+    const money = (n) => n > 0 ? `${sym[currency]}${Number(n).toLocaleString()}` : '—';
+
+    const headerTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: { style: BorderStyle.NONE, size: 0, color: BLUE },
+        bottom: { style: BorderStyle.NONE, size: 0, color: BLUE },
+        left: { style: BorderStyle.NONE, size: 0, color: BLUE },
+        right: { style: BorderStyle.NONE, size: 0, color: BLUE },
+        insideHorizontal: { style: BorderStyle.NONE, size: 0, color: BLUE },
+        insideVertical: { style: BorderStyle.NONE, size: 0, color: BLUE },
+      },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({
+              width: { size: 68, type: WidthType.PERCENTAGE },
+              shading: { type: ShadingType.CLEAR, fill: BLUE },
+              margins: { top: 110, bottom: 90, left: 130, right: 130 },
+              borders: { top:{style:BorderStyle.NONE}, bottom:{style:BorderStyle.NONE}, left:{style:BorderStyle.NONE}, right:{style:BorderStyle.NONE} },
+              children: [
+                new Paragraph({ children: [run('Proposal Builder', { color: WHITE, bold: true, size: normal })], spacing: { after: 55 } }),
+                new Paragraph({ children: [run(clean(v('f-title')) || 'Campaign Proposal', { color: WHITE, bold: true, size: titleSize })], spacing: { after: 45 }, alignment: AlignmentType.LEFT }),
+                new Paragraph({ children: [run(`B2B Marketing Campaign — ${markets}`, { color: 'DDEBFF', bold: false, size: small })], spacing: { after: 0 } }),
+              ],
+            }),
+            new TableCell({
+              width: { size: 32, type: WidthType.PERCENTAGE },
+              shading: { type: ShadingType.CLEAR, fill: BLUE },
+              margins: { top: 110, bottom: 90, left: 130, right: 130 },
+              borders: { top:{style:BorderStyle.NONE}, bottom:{style:BorderStyle.NONE}, left:{style:BorderStyle.NONE}, right:{style:BorderStyle.NONE} },
+              children: [
+                para(`Period: ${period}`, { color: WHITE, bold: true, size: small, line: 160 }),
+                para(`Prepared by: ${agency}`, { color: WHITE, bold: true, size: small, line: 160 }),
+                para(`Date: ${proposalDate}`, { color: WHITE, bold: true, size: small, line: 160 }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    });
+
+    const metaTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [new TableRow({
+        children: [
+          cell(`CLIENT\n${client}`, { width: 20, bold: true, size: tiny, shading: WHITE }),
+          cell(`TARGET MARKETS\n${markets}`, { width: 20, bold: true, size: tiny, shading: WHITE }),
+          cell(`CAMPAIGN PERIOD\n${period}`, { width: 20, bold: true, size: tiny, shading: WHITE }),
+          cell(`CLIENT INVESTMENT\n${money(totalClient)}`, { width: 20, bold: true, color: ORANGE, size: tiny, shading: WHITE }),
+          cell(`TOTAL BUDGET\n${money(totalBudget)}`, { width: 20, bold: true, color: ORANGE, size: tiny, shading: WHITE }),
+        ],
+      })],
+    });
+
+    const tableHeader = new TableRow({
+      tableHeader: true,
+      children: [
+        cell('Category', { width: 13, bold: true, color: WHITE, shading: BLUE, size: tiny, alignment: AlignmentType.CENTER }),
+        cell('Touchpoint', { width: 15, bold: true, color: WHITE, shading: BLUE, size: tiny }),
+        cell('Details', { width: 33, bold: true, color: WHITE, shading: BLUE, size: tiny }),
+        cell('KPI / Target', { width: 21, bold: true, color: WHITE, shading: BLUE, size: tiny }),
+        cell('Client', { width: 9, bold: true, color: WHITE, shading: BLUE, size: tiny, alignment: AlignmentType.RIGHT }),
+        cell('TBO', { width: 9, bold: true, color: WHITE, shading: BLUE, size: tiny, alignment: AlignmentType.RIGHT }),
+      ],
+    });
+
+    const serviceRows = services.map((s, idx) => {
+      const shade = idx % 2 === 0 ? WHITE : 'F8FAFC';
+      const typeText = s.foc ? 'FOC' : 'Paid';
+      return new TableRow({
+        cantSplit: true,
+        children: [
+          cell(clean(s.cat), { width: 13, bold: true, color: ORANGE, shading: ORANGE_LIGHT, size: tiny, alignment: AlignmentType.CENTER, line: 135 }),
+          cell(`${clean(s.name)}${s.foc ? ' (FOC)' : ''}`, { width: 15, bold: true, size: bodySize, shading: shade, line: 135 }),
+          cell(clean(s.details), { width: 33, size: tiny, color: MUTED, shading: shade, line: 132 }),
+          cell(`${clean(s.kpi)}${typeText ? ' | ' + typeText : ''}`, { width: 21, size: tiny, color: MUTED, shading: shade, line: 132 }),
+          cell(s.foc ? '—' : money(s.client), { width: 9, bold: true, color: ORANGE, size: tiny, shading: shade, alignment: AlignmentType.RIGHT, line: 132 }),
+          cell(s.foc ? '—' : money(s.agency), { width: 9, bold: true, color: BLUE, size: tiny, shading: shade, alignment: AlignmentType.RIGHT, line: 132 }),
+        ],
+      });
+    });
+
+    const totalsRow = new TableRow({
+      children: [
+        cell('Total', { width: 13, bold: true, color: WHITE, shading: BLUE, size: small }),
+        cell('', { width: 15, color: WHITE, shading: BLUE, size: small }),
+        cell('', { width: 33, color: WHITE, shading: BLUE, size: small }),
+        cell('Combined Campaign Budget', { width: 21, bold: true, color: WHITE, shading: BLUE, size: small }),
+        cell(money(totalClient), { width: 9, bold: true, color: 'FFBA91', shading: BLUE, size: small, alignment: AlignmentType.RIGHT }),
+        cell(money(totalAgency), { width: 9, bold: true, color: 'DDEBFF', shading: BLUE, size: small, alignment: AlignmentType.RIGHT }),
+      ],
+    });
+
+    const proposalTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [tableHeader, ...serviceRows, totalsRow],
+    });
+
+    const footerTable = new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [new TableRow({
+        children: [
+          cell(clean(v('f-footnote')) || clean(v('f-budget-notes')) || '', { width: 72, size: tiny, color: MUTED, shading: 'F1F5F9', line: 135 }),
+          cell(`${agencyName}\n${agencyEmail}`, { width: 28, bold: true, size: tiny, color: TEXT, shading: 'F1F5F9', alignment: AlignmentType.RIGHT, line: 135 }),
+        ],
+      })],
+    });
+
+    const doc = new DocxDocument({
+      creator: 'Proposal Builder',
+      title: clean(v('f-title')) || 'Campaign Proposal',
+      description: 'Exported from Proposal Builder',
+      styles: {
+        default: {
+          document: {
+            run: { font: 'Inter', size: bodySize, color: TEXT },
+            paragraph: { spacing: { after: 0, line: 160 } },
+          },
+        },
+      },
+      sections: [{
+        properties: {
+          page: {
+            size: {
+              orientation: PageOrientation.LANDSCAPE,
+              width: 16838,
+              height: 11906,
+            },
+            margin: {
+              top: 220,
+              right: 220,
+              bottom: 220,
+              left: 220,
+            },
+          },
+        },
+        children: [
+          headerTable,
+          metaTable,
+          blankPara,
+          proposalTable,
+          footerTable,
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
     const filenameBase = (v('f-client') || 'proposal-builder')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'proposal-builder';
 
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${filenameBase}-proposal.doc`;
+    link.download = `${filenameBase}-proposal.docx`;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
 
-    toast('Word file exported as one page', 'success');
+    toast('Editable Word DOCX exported', 'success');
   } catch (err) {
     console.error(err);
-    toast('Word export failed. Open Console for error details.', 'error');
+    toast('DOCX export failed. Open Console for error details.', 'error');
   } finally {
-    wordStage.remove();
     if (exportButton) {
       exportButton.disabled = false;
       exportButton.innerHTML = oldButtonHTML;
