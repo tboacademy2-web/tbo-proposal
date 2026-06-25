@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<!-- saved from url=(0067)file:///C:/Users/SaadKraimi/Downloads/tbo-proposal-combined_14.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proposal Builder Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root {
+    --blue:#1E6FD9; --blue-dark:#1859B5; --blue-light:#E8F2FF;
+    --orange:#FF6A13; --orange-light:#FFF4EC; --orange-mid:#FF8533;
+    --coral:var(--orange); --coral-light:var(--orange-light); --coral-mid:var(--orange-mid);
+    --dark:#0F172A; --text-primary:#0F172A; --text-secondary:#475569; --text-muted:#64748B;
+    --mid:#1E3A5F; --muted:var(--text-muted);
+    --border:#E2E8F0; --bg:#F8FAFC; --bg-subtle:#F1F5F9; --white:#FFFFFF;
+    --green:#1E6B3A; --green-bg:#E0F0E8;
+    --row-alt:#F8FAFC;
+    --sidebar-w:260px;
+    --sidebar-collapsed-w:72px;
+    --card-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
+    --radius-card:16px;
+    --radius-input:12px;
+    --transition:200ms ease;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text-primary);font-size:14px;font-weight:400;line-height:1.5;-webkit-font-smoothing:antialiased;}
+
+  /* ══════════════════════════════
+     BUILDER VIEW
+  ══════════════════════════════ */
+  #view-builder{display:none;}
+  #view-preview{display:none;}
+
+  .app{display:flex;min-height:100vh;}
+
+  /* SIDEBAR */
+  .sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--blue);color:rgba(255,255,255,.85);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-x:hidden;overflow-y:auto;transition:width .3s ease,box-shadow .3s ease;box-shadow:4px 0 24px rgba(30,111,217,.18);backdrop-filter:blur(12px);z-index:100;}
+  .sidebar.collapsed{width:var(--sidebar-collapsed-w);}
+  .sidebar-header{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.75rem 1rem 1rem;}
+  .sidebar.collapsed .sidebar-header{flex-direction:column;justify-content:center;padding:.75rem .5rem 1rem;gap:.5rem;}
+  .sidebar-toggle{width:36px;height:36px;border:none;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--transition),transform var(--transition);flex-shrink:0;order:2;}
+  .sidebar-toggle:hover{background:rgba(255,255,255,.2);transform:scale(1.04);}
+  .sidebar.collapsed .sidebar-toggle{order:1;margin:0 auto;}
+  .logo-card{flex:1;min-width:0;order:1;background:transparent;border-radius:12px;padding:.45rem .65rem;box-shadow:none;display:flex;align-items:center;transition:padding .3s ease;overflow:hidden;}
+  .sidebar.collapsed .logo-card{order:2;flex:unset;width:100%;padding:.5rem;border-radius:12px;justify-content:center;}
+  .brand-lockup{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;min-width:0;}
+  .sidebar.collapsed .brand-lockup{align-items:center;}
+  .brand-logo-wrap{overflow:hidden;width:100%;max-height:52px;line-height:0;}
+  .brand-logo{width:100%;max-width:128px;height:auto;object-fit:contain;object-position:left top;display:block;background:transparent;}
+  .sidebar.collapsed .brand-logo-wrap{max-height:none;}
+  .sidebar.collapsed .brand-logo{max-width:44px;}
+  .sidebar-nav{padding:.5rem .75rem 1rem;flex:1;}
+  .nav-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);padding:0 .75rem;margin-bottom:6px;margin-top:1.25rem;display:block;font-weight:600;white-space:nowrap;overflow:hidden;transition:opacity .2s;}
+  .sidebar.collapsed .nav-label{opacity:0;height:0;margin:0;padding:0;}
+  .nav-label:first-child{margin-top:0;}
+  .nav-item{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:12px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.82);margin-bottom:4px;border:none;background:transparent;width:100%;text-align:left;position:relative;white-space:nowrap;overflow:hidden;isolation:isolate;transition:color .25s ease,transform .3s cubic-bezier(.34,1.4,.64,1),box-shadow .25s ease;}
+  .nav-item::before{content:'';position:absolute;inset:0;border-radius:12px;background:linear-gradient(105deg,rgba(255,255,255,.3) 0%,rgba(255,255,255,.1) 100%);transform:scaleX(0);transform-origin:left center;opacity:0;transition:transform .34s cubic-bezier(.34,1.25,.64,1),opacity .2s ease;z-index:-1;}
+  .nav-item:hover::before{transform:scaleX(1);opacity:1;}
+  .nav-item:not(:hover):not(.active)::before{transition:transform .2s cubic-bezier(.4,0,.6,1),opacity .15s ease;}
+  .nav-item:hover{color:#fff;transform:translateX(4px) scale(1.02);}
+  .nav-item:not(.active):hover .nav-icon{background:rgba(255,255,255,.28);transform:scale(1.08) rotate(-3deg);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 4px 10px rgba(0,0,0,.18);}
+  .nav-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,.18);color:#fff;font-size:15px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 6px rgba(0,0,0,.12);transition:background .25s ease,transform .3s cubic-bezier(.34,1.4,.64,1),box-shadow .25s ease,color .25s ease;}
+  .nav-item .nav-text{transition:opacity .2s,width .2s;position:relative;z-index:1;}
+  .sidebar.collapsed .nav-item{justify-content:center;align-items:center;padding:0;gap:0;width:48px;height:48px;margin-inline:auto;}
+  .sidebar.collapsed .nav-item .nav-text{display:none;}
+  .sidebar.collapsed .nav-item .nav-icon{margin:0;}
+  .sidebar.collapsed .nav-item:hover{transform:scale(1.06);}
+  .sidebar.collapsed .nav-item.active{width:48px;height:48px;padding:0;}
+  .sidebar.collapsed .nav-item.active:hover{transform:none;}
+  .nav-item.active{color:var(--blue);font-weight:600;transform:none;box-shadow:0 4px 18px rgba(0,0,0,.14),inset 0 0 0 1px rgba(255,255,255,.6);}
+  .nav-item.active::before{background:var(--white);transform:scaleX(1);opacity:1;transition:none;}
+  .nav-item.active::after{content:'';position:absolute;right:10px;top:50%;transform:translateY(-50%);width:6px;height:6px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 3px rgba(255,106,19,.25);}
+  .nav-item.active .nav-icon{background:linear-gradient(135deg,var(--orange),var(--orange-mid));color:#fff;box-shadow:0 4px 12px rgba(255,106,19,.45);transform:none;}
+  .nav-item.active:hover{color:var(--blue);transform:none;}
+  .nav-item.active:hover .nav-icon{transform:scale(1.05);}
+  .sidebar.collapsed .nav-item.active::after{display:none;}
+  .sidebar.collapsed .nav-item.active::before{border-radius:14px;}
+  .sidebar.collapsed .nav-item::before{transform-origin:center;transform:scale(0);}
+  .sidebar.collapsed .nav-item:hover::before{transform:scale(1);}
+  .sidebar.collapsed .nav-item.active::before{transform:scale(1);opacity:1;}
+  .sidebar-footer{padding:1rem;border-top:1px solid rgba(255,255,255,.12);display:flex;flex-direction:column;gap:8px;}
+  .sidebar.collapsed .sidebar-footer .btn-label{display:none;}
+  .sidebar.collapsed .btn-export,.sidebar.collapsed .btn-ghost{justify-content:center;padding:10px;}
+  .btn-export{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px 14px;background:var(--orange);color:white;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:filter var(--transition),transform var(--transition),box-shadow var(--transition);box-shadow:0 4px 14px rgba(255,106,19,.3);}
+  .btn-export:hover{filter:brightness(1.05);transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,106,19,.4);}
+  .btn-ghost{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:9px 14px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.15);border-radius:10px;font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;transition:all var(--transition);}
+  .btn-ghost:hover{background:rgba(255,255,255,.14);color:#fff;}
+
+  /* CURRENCY SELECT */
+  .currency-block{padding:0 .75rem;}
+  .currency-block-label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.5);padding:0 .25rem;margin-bottom:6px;margin-top:1.25rem;display:block;font-weight:600;}
+  .sidebar.collapsed .currency-block{display:none;}
+  .currency-dropdown{position:relative;}
+  .currency-trigger{display:flex;align-items:center;gap:10px;width:100%;padding:6px 10px 6px 6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:12px;cursor:pointer;font-family:inherit;text-align:left;transition:background var(--transition),border-color var(--transition),box-shadow var(--transition);}
+  .currency-trigger:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.28);}
+  .currency-dropdown.open .currency-trigger,.currency-trigger:focus-visible{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.35);box-shadow:0 0 0 3px rgba(255,255,255,.08);outline:none;}
+  .currency-select-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(255,255,255,.18);color:var(--orange);font-size:15px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 2px 6px rgba(0,0,0,.1);transition:background .25s ease,transform .25s ease,color .25s ease;}
+  .currency-select-label{flex:1;min-width:0;font-size:12px;font-weight:600;color:#fff;line-height:1.3;}
+  .currency-select-chevron{color:rgba(255,255,255,.55);font-size:11px;flex-shrink:0;transition:transform .25s ease,color var(--transition);}
+  .currency-dropdown.open .currency-select-chevron{transform:rotate(180deg);color:rgba(255,255,255,.85);}
+  .currency-trigger:hover .currency-select-chevron{color:rgba(255,255,255,.85);}
+  .currency-menu{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:200;display:none;flex-direction:column;gap:4px;padding:6px;background:var(--white);border:1px solid var(--border);border-radius:12px;box-shadow:0 10px 32px rgba(15,23,42,.16),0 2px 8px rgba(15,23,42,.08);}
+  .currency-dropdown.open .currency-menu{display:flex;animation:curMenuIn .22s cubic-bezier(.22,1,.36,1);}
+  @keyframes curMenuIn{from{opacity:0;transform:translateY(-8px) scale(.98);}to{opacity:1;transform:translateY(0) scale(1);}}
+  .currency-option{display:flex;align-items:center;gap:10px;width:100%;padding:7px 10px 7px 7px;border:none;border-radius:10px;background:transparent;cursor:pointer;font-family:inherit;text-align:left;position:relative;overflow:hidden;isolation:isolate;transition:transform .28s cubic-bezier(.34,1.25,.64,1),color .2s ease;}
+  .currency-option::before{content:'';position:absolute;inset:0;border-radius:10px;background:linear-gradient(105deg,var(--blue-light) 0%,rgba(232,242,255,.55) 100%);transform:scaleX(0);transform-origin:left center;opacity:0;transition:transform .32s cubic-bezier(.34,1.25,.64,1),opacity .2s ease;z-index:-1;}
+  .currency-option:hover::before,.currency-option:focus-visible::before{transform:scaleX(1);opacity:1;}
+  .currency-option:hover{transform:translateX(3px);}
+  .currency-option:focus-visible{outline:2px solid var(--blue);outline-offset:1px;}
+  .currency-option .currency-select-icon{background:var(--blue-light);color:var(--blue);box-shadow:inset 0 1px 0 rgba(255,255,255,.8);}
+  .currency-option:hover .currency-select-icon,.currency-option:focus-visible .currency-select-icon{background:linear-gradient(135deg,var(--orange),var(--orange-mid));color:#fff;transform:scale(1.06);box-shadow:0 3px 10px rgba(255,106,19,.35);}
+  .currency-option-text{flex:1;min-width:0;font-size:12px;font-weight:500;color:var(--text-primary);line-height:1.3;}
+  .currency-option-text strong{font-weight:700;color:var(--blue);}
+  .currency-option:hover .currency-option-text,.currency-option:focus-visible .currency-option-text{color:var(--text-primary);}
+  .currency-option-check{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:transparent;background:transparent;transition:background .2s ease,color .2s ease;}
+  .currency-option.selected{background:var(--blue-light);box-shadow:inset 0 0 0 1px rgba(30,111,217,.18);}
+  .currency-option.selected::before{transform:scaleX(1);opacity:1;background:linear-gradient(105deg,rgba(232,242,255,.95) 0%,rgba(232,242,255,.6) 100%);}
+  .currency-option.selected .currency-select-icon{background:linear-gradient(135deg,var(--orange),var(--orange-mid));color:#fff;box-shadow:0 3px 10px rgba(255,106,19,.35);}
+  .currency-option.selected .currency-option-check{color:var(--blue);background:rgba(30,111,217,.12);}
+
+  /* MAIN */
+  .main{flex:1;padding:2rem 2.5rem 3rem;max-width:900px;min-width:0;}
+  .section-block{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-card);padding:1.75rem;margin-bottom:1.5rem;box-shadow:var(--card-shadow);transition:box-shadow var(--transition),transform var(--transition);}
+  .section-block:hover{box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 32px rgba(0,0,0,.08);}
+  .section-block:focus-within{box-shadow:0 0 0 3px rgba(30,111,217,.1),var(--card-shadow);border-color:rgba(30,111,217,.25);}
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;padding-bottom:.85rem;border-bottom:1px solid var(--border);}
+  .section-title{font-size:18px;font-weight:500;color:var(--text-primary);letter-spacing:-.02em;display:flex;align-items:center;gap:10px;}
+  .section-title i{color:var(--blue);font-size:16px;}
+  .section-tag{font-size:11px;padding:5px 12px;border-radius:999px;background:var(--blue-light);color:var(--blue);font-weight:600;letter-spacing:.01em;}
+  .section-tag.stat{background:var(--orange-light);color:var(--orange);}
+
+  /* FORMS */
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px 16px;}
+  .form-full{grid-column:1/-1;}
+  .field{display:flex;flex-direction:column;position:relative;margin-top:6px;}
+  .field-float{position:relative;padding-top:10px;margin-top:14px;}
+  .pill-label{position:absolute;top:6px;left:24px;transform:translateY(-50%);z-index:2;background:#f5f5f5;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--text-secondary);box-shadow:0 1px 4px rgba(0,0,0,.08);pointer-events:none;white-space:nowrap;max-width:calc(100% - 48px);overflow:hidden;text-overflow:ellipsis;transition:color var(--transition),box-shadow var(--transition);}
+  .field-float:focus-within .pill-label{color:var(--blue);box-shadow:0 2px 8px rgba(30,111,217,.12);}
+  .field input,.field textarea,.field select{font-family:inherit;font-size:13px;font-weight:400;padding:16px 16px 14px;border:1px solid var(--border);border-radius:var(--radius-input);background:var(--white);color:var(--text-primary);outline:none;transition:border-color var(--transition),box-shadow var(--transition),opacity var(--transition);resize:vertical;opacity:.65;width:100%;}
+  .field input:hover,.field textarea:hover,.field select:hover{opacity:1;border-color:#CBD5E1;}
+  .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,111,217,.12);opacity:1;}
+  .field textarea{min-height:72px;line-height:1.55;}
+  .field-check{display:flex;align-items:center;gap:8px;padding-top:8px;font-size:13px;font-weight:400;color:var(--text-secondary);cursor:pointer;}
+  .field-check input{accent-color:var(--orange);width:15px;height:15px;opacity:1;}
+  .currency-wrap{position:relative;}
+  .currency-wrap .cur-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-muted);font-weight:600;pointer-events:none;}
+  .field input.currency{padding-left:32px;}
+
+  /* SERVICES TABLE */
+  .svc-table-head{display:grid;grid-template-columns:22px 1fr 130px 90px 80px 80px 30px;gap:8px;padding:5px 12px;margin-bottom:4px;}
+  .svc-table-head span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500;}
+  .svc-table-head .right{text-align:right;}
+  .services-list{display:flex;flex-direction:column;gap:8px;}
+
+  /* SERVICE CARD */
+  .svc-card{border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color var(--transition),box-shadow var(--transition);background:var(--white);}
+  .svc-card:hover{border-color:rgba(30,111,217,.25);box-shadow:0 2px 12px rgba(0,0,0,.05);}
+  .svc-header{display:grid;grid-template-columns:22px 1fr 130px 90px 80px 80px 30px;gap:8px;align-items:center;padding:11px 14px;background:var(--bg-subtle);cursor:pointer;user-select:none;border-bottom:1px solid transparent;transition:background var(--transition);}
+  .svc-card.open .svc-header{background:var(--blue-light);border-bottom-color:var(--border);}
+  .drag-dots{display:flex;flex-direction:column;gap:2px;align-items:center;}
+  .drag-dots span{display:block;width:10px;height:1.5px;background:var(--border);border-radius:2px;}
+  .svc-name-col{display:flex;flex-direction:column;gap:1px;overflow:hidden;}
+  .svc-name{font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .svc-cat-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-weight:500;}
+  .svc-kpi{font-size:11px;font-weight:400;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .foc-pill{display:inline-block;font-size:10px;padding:3px 8px;border-radius:999px;background:var(--green-bg);color:var(--green);font-weight:600;white-space:nowrap;}
+  .paid-pill{display:inline-block;font-size:10px;padding:3px 8px;border-radius:999px;background:var(--bg-subtle);color:var(--text-muted);font-weight:500;white-space:nowrap;border:1px solid var(--border);}
+  .svc-amt{font-size:12px;font-weight:600;text-align:right;white-space:nowrap;}
+  .svc-amt.c{color:var(--orange);}
+  .svc-amt.a{color:var(--blue);}
+  .nav-item:focus-visible,.btn-export:focus-visible,.btn-ghost:focus-visible,.sidebar-toggle:focus-visible,.btn-add:focus-visible,.btn-back:focus-visible,.btn-print:focus-visible{outline:2px solid var(--orange);outline-offset:2px;}
+  .field input:focus-visible,.field textarea:focus-visible,.field select:focus-visible{outline:none;}
+  .svc-chevron{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:11px;padding:4px;display:flex;align-items:center;transition:transform .2s;}
+  .svc-card.open .svc-chevron{transform:rotate(180deg);}
+
+  /* Inline editable amount in card header */
+  .inline-amt{width:72px;font-family:inherit;font-size:12px;font-weight:600;text-align:right;border:1px solid transparent;border-radius:8px;padding:4px 8px;background:transparent;outline:none;transition:all var(--transition);-moz-appearance:textfield;}
+  .inline-amt::-webkit-outer-spin-button,.inline-amt::-webkit-inner-spin-button{-webkit-appearance:none;}
+  .inline-amt:hover{background:var(--white);border-color:var(--border);opacity:1;}
+  .inline-amt:focus{background:var(--white);border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,111,217,.1);opacity:1;}
+  .inline-amt:disabled{opacity:.35;cursor:not-allowed;}
+  .svc-body{display:block;max-height:0;overflow:hidden;padding:0 12px;background:var(--white);transition:max-height .25s ease,padding .2s;}
+  .svc-card.open .svc-body{max-height:900px;padding:12px;}
+  .svc-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .svc-actions{display:flex;justify-content:flex-end;margin-top:10px;}
+  .btn-remove{font-size:12px;font-weight:500;color:#DC2626;background:#FEF2F2;border:1px solid #FECACA;padding:7px 14px;border-radius:10px;cursor:pointer;font-family:inherit;transition:background var(--transition);}
+  .btn-remove:hover{background:#FECACA;}
+
+  .add-svc-row{padding:1.35rem 1.4rem;background:linear-gradient(135deg,var(--orange-light),var(--blue-light));border:1px dashed rgba(30,111,217,.2);border-radius:14px;margin-top:14px;}
+  .add-svc-fields{display:flex;flex-direction:column;gap:16px;}
+  .add-svc-row-top{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(180px,2fr) minmax(140px,1fr);gap:14px 16px;align-items:end;}
+  .add-svc-row-bottom{display:grid;grid-template-columns:minmax(120px,1fr) minmax(120px,1fr) auto auto;gap:14px 16px;align-items:end;}
+  .add-svc-row .field{flex:unset;min-width:0;margin-top:14px;}
+  .add-svc-foc{display:flex;align-items:center;height:46px;padding:0 4px;}
+  .add-svc-foc .field-check{margin-top:0;height:auto;padding-top:0;}
+  .btn-add{flex-shrink:0;padding:10px 22px;background:var(--orange);color:white;border:none;border-radius:10px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:filter var(--transition),transform var(--transition);height:46px;}
+  .btn-add:hover{filter:brightness(1.05);transform:scale(1.02);}
+  @media(max-width:720px){
+    .add-svc-row-top,.add-svc-row-bottom{grid-template-columns:1fr;}
+    .add-svc-row-bottom .btn-add{width:100%;}
+  }
+
+  .budget-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:.5rem;}
+  .b-card{padding:1.25rem 1.35rem;border-radius:var(--radius-card);border:1px solid var(--border);background:var(--white);box-shadow:var(--card-shadow);transition:transform var(--transition),box-shadow var(--transition);position:relative;overflow:hidden;}
+  .b-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue);}
+  .b-card:hover{transform:translateY(-2px);box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 32px rgba(0,0,0,.08);}
+  .b-card.total::before{background:var(--orange);}
+  .b-card.total{background:linear-gradient(180deg,var(--orange-light) 0%,var(--white) 60%);}
+  .b-card-icon{font-size:18px;color:var(--blue);margin-bottom:8px;}
+  .b-card.total .b-card-icon{color:var(--orange);}
+  .b-label{font-size:11px;font-weight:500;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+  .b-card.total .b-label{color:var(--orange);}
+  .b-amount{font-size:26px;font-weight:600;color:var(--text-primary);letter-spacing:-.03em;line-height:1.2;}
+  .b-card.total .b-amount{color:var(--orange);}
+  .b-sub{font-size:11px;color:var(--text-muted);margin-top:6px;font-weight:400;}
+  .b-card.total .b-sub{color:var(--orange);opacity:.8;}
+
+  /* TERMS */
+  .terms-list{display:flex;flex-direction:column;gap:7px;}
+  .term-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--radius-input);transition:border-color var(--transition),box-shadow var(--transition);}
+  .term-row:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(30,111,217,.08);}
+  .term-row input{flex:1;font-family:inherit;font-size:13px;font-weight:400;border:none;background:none;outline:none;color:var(--text-primary);}
+  .btn-rm-term{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:4px;border-radius:6px;transition:color var(--transition),background var(--transition);}
+  .btn-rm-term:hover{color:#DC2626;background:#FEF2F2;}
+  .btn-add-term{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;font-weight:500;color:var(--blue);background:none;border:none;cursor:pointer;font-family:inherit;padding:6px 0;transition:color var(--transition);}
+  .btn-add-term:hover{color:var(--blue-dark);}
+
+  /* TOAST */
+  .toast-container{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none;max-width:360px;}
+  .toast-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:12px;background:var(--white);border:1px solid var(--border);box-shadow:0 8px 32px rgba(0,0,0,.12);font-size:13px;font-weight:500;color:var(--text-primary);pointer-events:auto;animation:toastIn .3s ease;transform-origin:top right;}
+  .toast-item i{font-size:16px;margin-top:1px;flex-shrink:0;}
+  .toast-success{border-left:4px solid #22C55E;}.toast-success i{color:#22C55E;}
+  .toast-error{border-left:4px solid #EF4444;}.toast-error i{color:#EF4444;}
+  .toast-warning{border-left:4px solid #F59E0B;}.toast-warning i{color:#F59E0B;}
+  .toast-info{border-left:4px solid var(--blue);}.toast-info i{color:var(--blue);}
+  @keyframes toastIn{from{opacity:0;transform:translateX(20px) scale(.96);}to{opacity:1;transform:translateX(0) scale(1);}}
+  @keyframes toastOut{from{opacity:1;transform:translateX(0);}to{opacity:0;transform:translateX(20px);}}
+
+  /* ══════════════════════════════
+     PREVIEW / PRINT VIEW
+  ══════════════════════════════ */
+  #view-preview{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg);
+    color:var(--text-primary);
+    font-size:14px;
+    font-weight:400;
+    line-height:1.5;
+    min-height:100vh;
+    padding:2rem 2.5rem 3rem;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  #view-preview .preview-toolbar{
+    max-width:1140px;
+    margin:0 auto 1.25rem;
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+    padding:0 .5rem;
+  }
+  #view-preview .preview-toolbar h2{
+    grid-column:1 / -1;
+    grid-row:1;
+    justify-self:center;
+    text-align:center;
+    font-family:inherit;
+    font-size:24px;
+    font-weight:700;
+    color:var(--text-primary);
+    letter-spacing:-.02em;
+    line-height:1.5;
+    pointer-events:none;
+  }
+  #view-preview .preview-toolbar-actions{
+    display:contents;
+  }
+  #view-preview .btn-back{
+    grid-column:1;
+    grid-row:1;
+    justify-self:start;
+    z-index:1;
+    padding:10px 16px;
+    border-radius:10px;
+    font-family:inherit;
+    font-size:13px;
+    font-weight:500;
+    cursor:pointer;
+    background:var(--white);
+    color:var(--text-primary);
+    border:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    transition:all var(--transition);
+    box-shadow:var(--card-shadow);
+  }
+  #view-preview .btn-back:hover{background:var(--bg-subtle);border-color:#CBD5E1;}
+
+  #view-preview .btn-print{
+    grid-column:3;
+    grid-row:1;
+    justify-self:end;
+    z-index:1;
+    padding:10px 18px;
+    border-radius:10px;
+    font-family:inherit;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    background:var(--orange);
+    color:var(--white);
+    border:none;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    transition:filter var(--transition),transform var(--transition),box-shadow var(--transition);
+    box-shadow:0 4px 14px rgba(255,106,19,.3);
+  }
+  #view-preview .btn-print:hover{
+    filter:brightness(1.05);
+    transform:translateY(-1px);
+    box-shadow:0 6px 18px rgba(255,106,19,.4);
+  }
+
+  #view-preview .doc{
+    max-width:1140px;
+    margin:0 auto;
+    background:var(--white);
+    border:1px solid var(--border);
+    border-radius:var(--radius-card);
+    overflow:visible;
+    box-shadow:var(--card-shadow);
+    font-family:inherit;
+  }
+
+  #view-preview .doc-header{
+    border-radius:var(--radius-card) var(--radius-card) 0 0;
+    background:var(--blue);
+    padding:1.25rem 1.75rem;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:2rem;
+  }
+  #view-preview .doc-header h1{
+    font-family:inherit;
+    font-size:20px;
+    font-weight:600;
+    color:var(--white);
+    letter-spacing:-.02em;
+    line-height:1.35;
+  }
+  #view-preview .doc-header p{
+    font-family:inherit;
+    font-size:10px;
+    color:rgba(255,255,255,.65);
+    margin-top:6px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    font-weight:500;
+    line-height:1.5;
+  }
+  #view-preview .doc-header-right{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:5px;
+    flex-shrink:0;
+    text-align:left;
+  }
+  #view-preview .h-meta{
+    font-family:inherit;
+    font-size:11px;
+    color:rgba(255,255,255,.9);
+    font-weight:700;
+    display:flex;
+    gap:5px;
+    align-items:center;
+    line-height:1.5;
+  }
+  #view-preview .h-meta strong{
+    color:var(--white);
+    font-weight:400;
+  }
+
+  #view-preview .meta-strip{
+    display:grid;
+    border-bottom:1px solid var(--border);
+    background:var(--white);
+  }
+  #view-preview .meta-cell{
+    padding:14px 16px;
+    border-right:1px solid var(--border);
+  }
+  #view-preview .meta-cell:last-child{border-right:none;}
+  #view-preview .meta-label{
+    font-family:inherit;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:#000000;
+    font-weight:700;
+    margin-bottom:5px;
+    line-height:1.5;
+  }
+  #view-preview .meta-value{
+    font-family:inherit;
+    font-size:13px;
+    font-weight:400;
+    color:var(--text-muted);
+    line-height:1.35;
+  }
+  #view-preview .meta-value.coral{
+    color:var(--text-muted);
+    font-size:13px;
+    font-weight:400;
+    letter-spacing:normal;
+  }
+
+  #view-preview .doc-table-scroll{
+    overflow:visible;
+  }
+  #view-preview .doc table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:fixed;
+    font-family:inherit;
+  }
+  #view-preview .doc thead tr{background:var(--blue);}
+  #view-preview .doc thead th{
+    font-family:inherit;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    font-weight:600;
+    color:var(--white);
+    padding:4px 14px;
+    text-align:left;
+    border-right:1px solid rgba(255,255,255,.1);
+    line-height:1.5;
+    position:sticky;
+    top:0;
+    z-index:50;
+    background:var(--blue);
+    box-shadow:0 2px 8px rgba(15,23,42,.12);
+  }
+  #view-preview .doc thead th:last-child{border-right:none;}
+  #view-preview .doc thead th.right{text-align:right;}
+
+  #view-preview .doc tbody tr{
+    border-bottom:1px solid var(--border);
+    background:var(--white);
+  }
+  #view-preview .doc tbody tr.cat-stripe-a{background:var(--white);}
+  #view-preview .doc tbody tr.cat-stripe-b{background:var(--bg-subtle);}
+  #view-preview .doc td.cat{
+    font-family:inherit;
+    font-size:10px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    color:var(--orange);
+    line-height:1.5;
+    vertical-align:middle;
+    text-align:center;
+    background:var(--orange-light);
+    border:1px solid #F5D0B8;
+  }
+  #view-preview .doc td.cat.cat-stripe-b{
+    background:#FFE8D6;
+    border-color:#F0C9A8;
+  }
+  #view-preview .doc tbody td{
+    padding:11px 14px;
+    font-family:inherit;
+    font-size:12px;
+    color:var(--text-secondary);
+    vertical-align:top;
+    line-height:1.5;
+  }
+  #view-preview .doc td.tp{
+    font-weight:600;
+    color:var(--text-primary);
+    font-size:12px;
+    vertical-align: middle;
+  }
+  #view-preview .doc td.det{
+    font-size:11px;
+    color:var(--text-muted);
+    line-height:1.55;
+  }
+  #view-preview .doc td.kpi{
+    font-size:11px;
+    color:var(--text-secondary);
+    font-weight:500;
+  }
+  #view-preview .doc td.amt{
+    text-align:right;
+    font-weight:600;
+    font-size:12px;
+    white-space:nowrap;
+  }
+  #view-preview .doc td.amt.cl{color:var(--orange);}
+  #view-preview .doc td.amt.ag{color:var(--text-muted);font-weight:500;}
+
+  #view-preview .p-foc{
+    display:inline-block;
+    font-family:inherit;
+    font-size:9px;
+    padding:3px 7px;
+    border-radius:999px;
+    background:var(--green-bg);
+    color:var(--green);
+    font-weight:600;
+    letter-spacing:.02em;
+    line-height:1.4;
+  }
+  #view-preview .doc td.tp .p-foc{margin-top:4px;}
+
+  #view-preview .totals-row td{
+    background:var(--blue) !important;
+    color:var(--white) !important;
+    font-family:inherit;
+    font-weight:600;
+    font-size:12px;
+    padding:12px 14px;
+    border:none !important;
+    line-height:1.5;
+  }
+  #view-preview .totals-row .amt.cl{color:#ffba91!important;font-weight:700;}
+  #view-preview .totals-row .amt.ag{color:var(--blue-light) !important;font-weight:600;}
+
+  #view-preview .doc-footer{
+    padding:1.1rem 1.75rem;
+    border-top:1px solid var(--border);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:var(--bg-subtle);
+    font-family:inherit;
+    border-radius:0 0 var(--radius-card) var(--radius-card);
+  }
+  #view-preview .footer-note{
+    font-size:11px;
+    color:var(--text-muted);
+    line-height:1.55;
+    max-width:560px;
+  }
+  #view-preview .footer-sig{
+    text-align:right;
+    font-size:11px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+  #view-preview .footer-sig strong{
+    display:block;
+    color:var(--text-primary);
+    font-size:13px;
+    font-weight:600;
+    margin-bottom:3px;
+  }
+
+  #view-preview .doc-header > div:first-child::before{
+    content:'';
+    display:block;
+    width:118px;
+    height:40px;
+    margin-bottom:12px;
+    background:url('tbo-logo-white.png') no-repeat left center/contain;
+  }
+
+  @media(max-width:900px){
+    .form-grid{grid-template-columns:1fr;}
+    .budget-cards{grid-template-columns:1fr;}
+    .svc-table-head,.svc-header{grid-template-columns:22px 1fr 80px 30px;}
+    .svc-kpi,.svc-amt.a,.svc-table-head span:nth-child(3),.svc-table-head span:nth-child(4),.svc-table-head span:nth-child(6){display:none;}
+    .main{padding:1.25rem;}
+    #view-preview{padding:1.25rem;}
+  }
+  @media(max-width:640px){
+    .main{padding:1rem;}
+    .sidebar{width:var(--sidebar-collapsed-w);}
+    .sidebar:not(.collapsed) .nav-text,.sidebar:not(.collapsed) .nav-label,.sidebar:not(.collapsed) .currency-block,.sidebar:not(.collapsed) .btn-label{display:none;}
+  }
+
+  /* ══════════════════════════════
+     PRINT STYLES
+  ══════════════════════════════ */
+  @media print {
+    @page{margin:1cm 1.3cm;size:A4 landscape;}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    body{background:white;padding:0;}
+    #view-builder{display:none !important;}
+    #view-preview{display:block !important;padding:0;background:white;}
+    .preview-toolbar{display:none;}
+    .doc{border:none;border-radius:0;max-width:100%;}
+    #view-preview .doc tbody tr.cat-stripe-a{background:var(--white) !important;}
+    #view-preview .doc tbody tr.cat-stripe-b{background:var(--bg-subtle) !important;}
+    #view-preview .doc td.cat{background:var(--orange-light) !important;border:1px solid #F5D0B8 !important;}
+    #view-preview .doc td.cat.cat-stripe-b{background:#FFE8D6 !important;border-color:#F0C9A8 !important;}
+    #view-preview .doc-table-scroll{max-height:none;overflow:visible;}
+    #view-preview .totals-row td{background:var(--blue) !important;}
+    #view-preview .doc-header{background:var(--blue) !important;}
+    #view-preview .doc thead tr{background:var(--blue) !important;}
+    #view-preview .doc-footer{background:var(--bg-subtle) !important;}
+    
+  }
+
+  .doc-table-scroll tr td:not(:first-child), .doc-table-scroll .tp{
+    border-bottom: 1px solid #e2e2e2;
+  }
+
+
+  /* ══════════════════════════════
+     AUTH / LOGIN VIEW
+  ══════════════════════════════ */
+  #auth-view{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#F3F4F6;padding:2rem;font-family:'Inter',system-ui,-apple-system,sans-serif;color:var(--text-primary);}
+  .auth-shell{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:18px;}
+  .auth-logo-mark{width:58px;height:58px;border-radius:8px;background:#0D1B2A;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(15,23,42,.16);font-size:11px;font-weight:700;letter-spacing:-.04em;color:#fff;}
+  .auth-logo-mark .blue{color:#4EA3FF}.auth-logo-mark .orange{color:#FF6A13}
+  .auth-title{font-size:28px;font-weight:700;letter-spacing:-.035em;line-height:1.2;color:#111827;text-align:center;margin:0;}
+  .auth-card{width:100%;background:#fff;border:1px solid #E5E7EB;border-radius:8px;box-shadow:0 18px 42px rgba(15,23,42,.16);padding:28px 28px 26px;}
+  .auth-card h2{font-size:25px;font-weight:700;letter-spacing:-.03em;text-align:center;color:#111827;margin:0 0 24px;}
+  .auth-form{display:flex;flex-direction:column;gap:14px;}
+  .auth-input-wrap{position:relative;}
+  .auth-input{width:100%;height:46px;border:1px solid #DDE3EA;border-radius:4px;background:#fff;padding:0 16px;font-family:inherit;font-size:15px;color:#111827;outline:none;transition:border-color .2s ease,box-shadow .2s ease;}
+  .auth-input::placeholder{color:#9CA3AF;}
+  .auth-input:focus{border-color:#1E6FD9;box-shadow:0 0 0 3px rgba(30,111,217,.12);}
+  .auth-password-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:transparent;color:#94A3B8;cursor:pointer;font-size:15px;padding:6px;}
+  .auth-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:#64748B;margin:2px 0 6px;}
+  .auth-row label{display:flex;align-items:center;gap:8px;cursor:pointer;}
+  .auth-row input{width:16px;height:16px;accent-color:#0D1B2A;}
+  .auth-link{border:none;background:transparent;padding:0;color:#6B7280;text-decoration:none;font-family:inherit;font-size:13px;cursor:pointer;}
+  .auth-link:hover{text-decoration:underline;color:#0D1B2A;}
+  .auth-primary-btn{height:48px;border:none;border-radius:4px;background:#0D1B2A;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;transition:filter .2s ease,transform .2s ease,box-shadow .2s ease;box-shadow:0 8px 18px rgba(13,27,42,.16);}
+  .auth-primary-btn:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 12px 24px rgba(13,27,42,.20);}
+  .auth-divider{display:flex;align-items:center;gap:12px;color:#9CA3AF;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:18px 0;}
+  .auth-divider::before,.auth-divider::after{content:'';height:1px;background:#E5E7EB;flex:1;}
+  .auth-google-btn{height:48px;width:100%;border:1px solid #DDE3EA;border-radius:4px;background:#fff;color:#111827;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background .2s ease,border-color .2s ease,box-shadow .2s ease;}
+  .auth-google-btn:hover{background:#F8FAFC;border-color:#CBD5E1;box-shadow:0 8px 18px rgba(15,23,42,.08);}
+  .auth-google-icon{width:18px;height:18px;display:block;}
+  .auth-error{display:none;margin:0 0 14px;padding:10px 12px;border-radius:6px;background:#FEF2F2;border:1px solid #FECACA;color:#B91C1C;font-size:13px;line-height:1.45;}
+  .auth-note{text-align:center;color:#94A3B8;font-size:13px;line-height:1.5;margin-top:16px;}
+  .auth-user-box{display:none;margin:0 0 8px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);font-size:12px;color:rgba(255,255,255,.85);line-height:1.4;word-break:break-word;}
+  .auth-user-box strong{display:block;color:#fff;font-size:13px;margin-bottom:2px;}
+  @media(max-width:520px){#auth-view{padding:1rem}.auth-card{padding:24px 20px}.auth-title{font-size:25px}}
+
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     AUTH / LOGIN VIEW
+══════════════════════════════════════ -->
+<div id="auth-view">
+  <div class="auth-shell">
+    <div class="auth-logo-mark" aria-label="TBO logo"><span class="blue">tbo</span><span class="orange">.com</span></div>
+    <h1 class="auth-title">Proposal Builder</h1>
+
+    <section class="auth-card" aria-label="Sign in form">
+      <h2>Sign In</h2>
+      <div id="auth-error" class="auth-error" role="alert"></div>
+      <form id="login-form" class="auth-form">
+        <div class="auth-input-wrap">
+          <input id="login-email" class="auth-input" type="email" autocomplete="email" placeholder="Enter your Email" required>
+        </div>
+        <div class="auth-input-wrap">
+          <input id="login-password" class="auth-input" type="password" autocomplete="current-password" placeholder="Enter your Password" required>
+          <button id="toggle-password" class="auth-password-toggle" type="button" aria-label="Show password"><i class="fa-regular fa-eye"></i></button>
+        </div>
+        <div class="auth-row">
+          <label><input id="remember-me" type="checkbox"> Remember me</label>
+          <button id="forgot-password" class="auth-link" type="button">Forgot password?</button>
+        </div>
+        <button id="email-login-btn" class="auth-primary-btn" type="submit">Sign In</button>
+      </form>
+
+      <div class="auth-divider">or</div>
+
+      <button id="google-login-btn" class="auth-google-btn" type="button">
+        <svg class="auth-google-icon" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.655 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.153 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+        Continue with Google
+      </button>
+
+      <p class="auth-note">Use your authorized Firebase account to access the builder.</p>
+    </section>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════
+     BUILDER VIEW
+══════════════════════════════════════ -->
+<div id="view-builder">
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-card">
+        <div class="brand-lockup">
+          <div class="brand-logo-wrap">
+            <img src="tbo-logo-white.png" alt="TBO Academy" class="brand-logo">
+          </div>
+        </div>
+      </div>
+      <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </div>
+    <nav class="sidebar-nav">
+      <span class="nav-label">Sections</span>
+      <button class="nav-item active" onclick="jumpTo('s-overview',this)" title="Campaign Overview">
+        <span class="nav-icon"><i class="fa-solid fa-bullhorn"></i></span>
+        <span class="nav-text">Campaign Overview</span>
+      </button>
+      <button class="nav-item" onclick="jumpTo('s-client',this)" title="Client Information">
+        <span class="nav-icon"><i class="fa-solid fa-building"></i></span>
+        <span class="nav-text">Client Information</span>
+      </button>
+      <button class="nav-item" onclick="jumpTo('s-services',this)" title="Services &amp; Deliverables">
+        <span class="nav-icon"><i class="fa-solid fa-layer-group"></i></span>
+        <span class="nav-text">Services &amp; Deliverables</span>
+      </button>
+      <button class="nav-item" onclick="jumpTo('s-budget',this)" title="Budget Summary">
+        <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
+        <span class="nav-text">Budget Summary</span>
+      </button>
+      <button class="nav-item" onclick="jumpTo('s-terms',this)" title="Terms &amp; Conditions">
+        <span class="nav-icon"><i class="fa-solid fa-scale-balanced"></i></span>
+        <span class="nav-text">Terms &amp; Conditions</span>
+      </button>
+
+      <div class="currency-block">
+        <span class="currency-block-label">Currency</span>
+        <div class="currency-dropdown" id="currency-dropdown">
+          <button type="button" class="currency-trigger" id="currency-trigger" aria-haspopup="listbox" aria-expanded="false" onclick="toggleCurrencyDropdown(event)">
+            <span class="currency-select-icon" id="currency-select-icon"><i class="fa-solid fa-dollar-sign"></i></span>
+            <span class="currency-select-label" id="currency-select-label">USD — US Dollar</span>
+            <i class="fa-solid fa-chevron-down currency-select-chevron" aria-hidden="true"></i>
+          </button>
+          <div class="currency-menu" id="currency-menu" role="listbox" aria-label="Currency options"></div>
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="auth-user-box" id="auth-user-box"><strong id="auth-user-name">Signed in</strong><span id="auth-user-email"></span></div>
+      <button class="btn-ghost" id="logout-btn" type="button">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        <span class="btn-label">Sign out</span>
+      </button>
+      <button class="btn-export" onclick="showPreview()">
+        <i class="fa-solid fa-eye"></i>
+        <span class="btn-label">Preview &amp; Export PDF</span>
+      </button>
+      <button class="btn-ghost" onclick="resetAll()">
+        <i class="fa-solid fa-rotate-left"></i>
+        <span class="btn-label">Reset to defaults</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN BUILDER -->
+  <main class="main">
+
+    <!-- OVERVIEW -->
+    <div class="section-block" id="s-overview">
+      <div class="section-head">
+        <h2 class="section-title"><i class="fa-solid fa-bullhorn"></i> Campaign Overview</h2>
+      </div>
+      <div class="form-grid">
+        <div class="field field-float form-full">
+          <label class="pill-label" for="f-title">Campaign Title</label>
+          <input id="f-title" type="text" value="Fashion Arena Prague Outlet × TBO — GCC, India, Egypt &amp; Turkey Campaign">
+        </div>
+        <div class="field field-float form-full">
+          <label class="pill-label" for="f-desc">Campaign Description / Objectives</label>
+          <textarea id="f-desc">Promote the Fashion Arena Prague Outlet experience to travel agents across key target markets through a comprehensive 360° B2B marketing campaign leveraging TBO's global agent network.</textarea>
+        </div>
+        <div class="field field-float">
+          <label class="pill-label" for="f-period">Campaign Period</label>
+          <input id="f-period" type="text" value="9 Months">
+        </div>
+        <div class="field field-float">
+          <label class="pill-label" for="f-markets">Target Markets</label>
+          <input id="f-markets" type="text" value="GCC, India, Egypt, Turkey">
+        </div>
+        <div class="field field-float">
+          <label class="pill-label" for="f-start">Start Date</label>
+          <input id="f-start" type="date">
+        </div>
+        <div class="field field-float">
+          <label class="pill-label" for="f-end">End Date</label>
+          <input id="f-end" type="date">
+        </div>
+      </div>
+    </div>
+
+    <!-- CLIENT INFO -->
+    <div class="section-block" id="s-client">
+      <div class="section-head">
+        <h2 class="section-title"><i class="fa-solid fa-building"></i> Client Information</h2>
+      </div>
+      <div class="form-grid">
+        <div class="field field-float"><label class="pill-label" for="f-client">Client / Brand Name</label><input id="f-client" type="text" value="Fashion Arena Prague Outlet"></div>
+        <div class="field field-float"><label class="pill-label" for="f-contact">Contact Person</label><input id="f-contact" type="text" placeholder="Full name"></div>
+        <div class="field field-float"><label class="pill-label" for="f-cemail">Client Email</label><input id="f-cemail" type="email" placeholder="contact@client.com"></div>
+        <div class="field field-float"><label class="pill-label" for="f-cphone">Client Phone</label><input id="f-cphone" type="tel" placeholder="+1 000 000 0000"></div>
+        <div class="field field-float"><label class="pill-label" for="f-agency">Prepared By (Agency)</label><input id="f-agency" type="text" value="TBO Academy"></div>
+        <div class="field field-float"><label class="pill-label" for="f-aname">Agency Contact</label><input id="f-aname" type="text" placeholder="Your name"></div>
+        <div class="field field-float"><label class="pill-label" for="f-aemail">Agency Email</label><input id="f-aemail" type="email" value="academy@tbo.com"></div>
+        <div class="field field-float"><label class="pill-label" for="f-pdate">Proposal Date</label><input id="f-pdate" type="date"></div>
+        <div class="field field-float"><label class="pill-label" for="f-valid">Valid Until</label><input id="f-valid" type="date"></div>
+        <div class="field field-float form-full"><label class="pill-label" for="f-footnote">Footer / Disclaimer Note</label><textarea id="f-footnote">Prices in USD. FOC items are complimentary and subject to availability. This proposal is valid for 30 days from the date of issue. All campaign materials subject to client approval before going live.</textarea></div>
+      </div>
+    </div>
+
+    <!-- SERVICES -->
+    <div class="section-block" id="s-services">
+      <div class="section-head">
+        <h2 class="section-title"><i class="fa-solid fa-layer-group"></i> Services &amp; Deliverables</h2>
+        <span class="section-tag stat" id="svc-count-tag">15 services</span>
+      </div>
+      <div class="svc-table-head">
+        <span></span>
+        <span>Service / Touchpoint</span>
+        <span>KPI / Target</span>
+        <span>Type</span>
+        <span class="right" style="color:var(--orange);">Client Share</span>
+        <span class="right">TBO Share</span>
+        <span></span>
+      </div>
+      <div class="services-list" id="services-list"></div>
+      <div class="add-svc-row">
+        <div class="add-svc-fields">
+          <div class="add-svc-row-top">
+            <div class="field field-float">
+              <label class="pill-label" for="n-cat">Category</label>
+              <select id="n-cat">
+                <option>Brand Positioning</option>
+                <option>Trade Training &amp; Engagement</option>
+                <option>Reward Program</option>
+                <option>Product of the Week</option>
+                <option>Digital Marketing</option>
+                <option>Campaign Activities</option>
+                <option>Custom</option>
+              </select>
+            </div>
+            <div class="field field-float">
+              <label class="pill-label" for="n-name">Service Name</label>
+              <input id="n-name" type="text" placeholder="e.g. Social Media Campaign">
+            </div>
+            <div class="field field-float">
+              <label class="pill-label" for="n-kpi">KPI</label>
+              <input id="n-kpi" type="text" placeholder="e.g. 1,000 impressions">
+            </div>
+          </div>
+          <div class="add-svc-row-bottom">
+            <div class="field field-float">
+              <label class="pill-label" for="n-client">Client Share</label>
+              <div class="currency-wrap"><span class="cur-icon" id="n-client-icon">$</span><input id="n-client" type="number" class="currency" placeholder="0" min="0"></div>
+            </div>
+            <div class="field field-float">
+              <label class="pill-label" for="n-agency">TBO Share</label>
+              <div class="currency-wrap"><span class="cur-icon" id="n-agency-icon">$</span><input id="n-agency" type="number" class="currency" placeholder="0" min="0"></div>
+            </div>
+            <div class="field add-svc-foc">
+              <label class="field-check">
+                <input id="n-foc" type="checkbox"> FOC
+              </label>
+            </div>
+            <button class="btn-add" onclick="addService()"><i class="fa-solid fa-plus"></i> Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUDGET -->
+    <div class="section-block" id="s-budget">
+      <div class="section-head">
+        <h2 class="section-title"><i class="fa-solid fa-chart-pie"></i> Budget Summary</h2>
+      </div>
+      <div class="budget-cards">
+        <div class="b-card"><div class="b-card-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div><div class="b-label">Client Investment</div><div class="b-amount" id="b-client">$14,000</div><div class="b-sub">Client's share</div></div>
+        <div class="b-card"><div class="b-card-icon"><i class="fa-solid fa-building-columns"></i></div><div class="b-label">Agency Investment</div><div class="b-amount" id="b-agency">$20,000</div><div class="b-sub">Agency's share</div></div>
+        <div class="b-card total"><div class="b-card-icon"><i class="fa-solid fa-sack-dollar"></i></div><div class="b-label">Total Budget</div><div class="b-amount" id="b-total">$34,000</div><div class="b-sub">Combined</div></div>
+      </div>
+      <div style="margin-top:1.5rem;">
+        <div class="field field-float"><label class="pill-label" for="f-budget-notes">Budget Notes</label><textarea id="f-budget-notes" style="min-height:50px;">Prices in USD. FOC items are complimentary and not included in the total budget. Payment: 50% upfront, 50% upon campaign launch.</textarea></div>
+      </div>
+    </div>
+
+    <!-- TERMS -->
+    <div class="section-block" id="s-terms">
+      <div class="section-head"><h2 class="section-title"><i class="fa-solid fa-scale-balanced"></i> Terms &amp; Conditions</h2></div>
+      <div class="terms-list" id="terms-list"><div class="term-row"><span style="font-size:10px;font-weight:600;color:var(--muted);min-width:16px;">1.</span><input type="text" value="All prices are quoted in USD unless otherwise specified." oninput="terms[0]=this.value"><button class="btn-rm-term" onclick="rmTerm(0)">✕</button></div><div class="term-row"><span style="font-size:10px;font-weight:600;color:var(--muted);min-width:16px;">2.</span><input type="text" value="FOC (Free of Charge) items are complimentary and subject to availability." oninput="terms[1]=this.value"><button class="btn-rm-term" onclick="rmTerm(1)">✕</button></div><div class="term-row"><span style="font-size:10px;font-weight:600;color:var(--muted);min-width:16px;">3.</span><input type="text" value="Campaign materials must be approved by the client before going live." oninput="terms[2]=this.value"><button class="btn-rm-term" onclick="rmTerm(2)">✕</button></div><div class="term-row"><span style="font-size:10px;font-weight:600;color:var(--muted);min-width:16px;">4.</span><input type="text" value="Monthly reports shared within 5 business days of the following month." oninput="terms[3]=this.value"><button class="btn-rm-term" onclick="rmTerm(3)">✕</button></div><div class="term-row"><span style="font-size:10px;font-weight:600;color:var(--muted);min-width:16px;">5.</span><input type="text" value="Either party may terminate with 30 days written notice." oninput="terms[4]=this.value"><button class="btn-rm-term" onclick="rmTerm(4)">✕</button></div><div class="term-row"><span style="font-size:10px;font-weight:600;color:var(--muted);min-width:16px;">6.</span><input type="text" value="Changes to scope require a written amendment signed by both parties." oninput="terms[5]=this.value"><button class="btn-rm-term" onclick="rmTerm(5)">✕</button></div><div class="term-row"><span style="font-size:10px;font-weight:600;color:var(--muted);min-width:16px;">7.</span><input type="text" value="Confidentiality of all shared data and insights is guaranteed by both parties." oninput="terms[6]=this.value"><button class="btn-rm-term" onclick="rmTerm(6)">✕</button></div></div>
+      <button class="btn-add-term" onclick="addTerm()">
+        <i class="fa-solid fa-plus"></i>
+        Add term
+      </button>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PREVIEW VIEW
+══════════════════════════════════════ -->
+<div id="view-preview">
+  <div class="preview-toolbar">
+    <h2>Proposal Preview</h2>
+    <div class="preview-toolbar-actions">
+      <button class="btn-back" onclick="backToBuilder()">
+        <i class="fa-solid fa-arrow-left"></i>
+        Back to Builder
+      </button>
+      <button class="btn-print" onclick="window.print()">
+        <i class="fa-solid fa-file-pdf"></i>
+        Export PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="doc">
+    <div class="doc-header">
+      <div>
+        <h1 id="p-title"></h1>
+        <p id="p-subtitle"></p>
+      </div>
+      <div class="doc-header-right">
+        <div class="h-meta">Period:&nbsp;<strong id="p-period"></strong></div>
+        <div class="h-meta">Prepared by&nbsp;<strong id="p-by"></strong></div>
+        <div class="h-meta">Date:&nbsp;<strong id="p-date"></strong></div>
+      </div>
+    </div>
+
+    <div class="meta-strip" id="p-meta-strip"></div>
+
+    <div class="doc-table-scroll">
+    <table>
+      <colgroup>
+        <col style="width:13%">
+        <col style="width:15%">
+        <col style="width:33%">
+        <col style="width:21%">
+        <col style="width:9%">
+        <col style="width:9%">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Touchpoint</th>
+          <th>Details</th>
+          <th>KPI / Target</th>
+          <th class="right">Client Share</th>
+          <th class="right">TBO Share</th>
+        </tr>
+      </thead>
+      <tbody id="p-tbody"></tbody>
+    </table>
+    </div>
+
+    <div class="doc-footer">
+      <div class="footer-note" id="p-footnote"></div>
+      <div class="footer-sig">
+        <strong id="p-sig-name"></strong>
+        <span id="p-sig-email"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ── STATE ──
+let currency = 'USD';
+const sym = { USD:'$', EUR:'€', AED:'AED ', GBP:'£', INR:'₹' };
+const curMeta = {
+  USD:{icon:'fa-dollar-sign',label:'US Dollar'},
+  EUR:{icon:'fa-euro-sign',label:'Euro'},
+  AED:{icon:'fa-coins',label:'UAE Dirham'},
+  GBP:{icon:'fa-sterling-sign',label:'British Pound'},
+  INR:{icon:'fa-indian-rupee-sign',label:'Indian Rupee'},
+};
+const fmt = n => n > 0 ? sym[currency] + n.toLocaleString() : '—';
+
+function pillField(label, inner, full){
+  const cls = full ? 'field field-float' + (full===true?' form-full':'') : 'field field-float';
+  return `<div class="${cls}" style="${typeof full==='string'?full:''}"><label class="pill-label">${label}</label>${inner}</div>`;
+}
+
+function curIconHtml(){ return `<span class="cur-icon">${sym[currency]}</span>`; }
+
+function renderCurrencyMenu(){
+  const menu = document.getElementById('currency-menu');
+  if(!menu) return;
+  menu.innerHTML = Object.keys(curMeta).map(code => {
+    const m = curMeta[code];
+    const sel = code === currency;
+    return `<button type="button" class="currency-option${sel?' selected':''}" role="option" aria-selected="${sel}" data-code="${code}" onclick="pickCurrency('${code}')">
+      <span class="currency-select-icon"><i class="fa-solid ${m.icon}"></i></span>
+      <span class="currency-option-text"><strong>${code}</strong> — ${m.label}</span>
+      <span class="currency-option-check"><i class="fa-solid fa-check"></i></span>
+    </button>`;
+  }).join('');
+}
+
+function toggleCurrencyDropdown(e){
+  e.stopPropagation();
+  const dd = document.getElementById('currency-dropdown');
+  const open = dd.classList.toggle('open');
+  document.getElementById('currency-trigger').setAttribute('aria-expanded', open);
+  if(open) renderCurrencyMenu();
+}
+
+function closeCurrencyDropdown(){
+  const dd = document.getElementById('currency-dropdown');
+  if(!dd) return;
+  dd.classList.remove('open');
+  const t = document.getElementById('currency-trigger');
+  if(t) t.setAttribute('aria-expanded','false');
+}
+
+function pickCurrency(code){
+  setCurrency(code);
+  closeCurrencyDropdown();
+}
+
+function updateCurrencyUI(){
+  const m = curMeta[currency];
+  const iconEl = document.getElementById('currency-select-icon');
+  const labelEl = document.getElementById('currency-select-label');
+  if(iconEl && m) iconEl.innerHTML = `<i class="fa-solid ${m.icon}"></i>`;
+  if(labelEl && m) labelEl.textContent = `${currency} — ${m.label}`;
+  if(document.getElementById('currency-dropdown')?.classList.contains('open')) renderCurrencyMenu();
+  ['n-client-icon','n-agency-icon'].forEach(id=>{ const e=document.getElementById(id); if(e) e.textContent=sym[currency]; });
+  document.querySelectorAll('.currency-wrap .cur-icon').forEach(e=>{ if(!e.id) e.textContent=sym[currency]; });
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+const defaultServices = [
+  {cat:'Brand Positioning',name:'Dedicated Microsite',details:'Landing page showcasing outlet offerings, experiences, promotions, popular activities & deals. Includes itinerary integration, flash sale promotion, embedded query form & "Book Now" CTA. Min. 9 months validity.',kpi:'100+ visitors/day | ~20,000 visitors',client:3500,agency:4500,foc:false},
+  {cat:'Trade Training & Engagement',name:'Digital Workshop / Webinar',details:'LIVE interactive showcase open to all TBO & non-TBO users. Gamification, quiz & engagement facilitated by TBO. Recording shelf life: 12 months. Supported by 2 announcements + 2 reminders + 1 follow-up.',kpi:'1 workshop | min. 100 bookers',client:3000,agency:3000,foc:false},
+  {cat:'Trade Training & Engagement',name:'Facebook Live Broadcast',details:'Workshop simultaneously broadcast on Facebook Live for wider organic reach. No shelf limit.',kpi:'1,000+ engagement',client:0,agency:0,foc:true},
+  {cat:'Reward Program',name:'Webinar Winner Vouchers',details:'5 agents win vouchers / gift cards based on participation in webinar sessions.',kpi:'5 winners per webinar',client:0,agency:0,foc:true},
+  {cat:'Reward Program',name:'Flash Sale & Seasonal Specials',details:'Limited-time offers during Ramadan, Eid, National Days, Christmas, New Year & Summer holidays. Dedicated packages per occasion.',kpi:'As per bookings',client:0,agency:0,foc:true},
+  {cat:'Product of the Week',name:'7 Days – 7 USPs Feature',details:'7-day dedicated promotion: exclusive pop-up notifications, daily WhatsApp messages, homepage quiz, push notifications, exclusive brand discounts & deals.',kpi:'1 feature during campaign',client:1000,agency:1000,foc:false},
+  {cat:'Digital Marketing',name:'Monthly Email Mailer',details:'Destination promoted to full TBO agent database. Premium & standard targeting by segment (hotel star rating, ADR & revenue).',kpi:'1 mailer/month | ~70,000 bookers | 23% open rate',client:6500,agency:6500,foc:false},
+  {cat:'Digital Marketing',name:'Social Media Posts (FB, IG, LinkedIn)',details:'Monthly posts across Facebook (122K), Instagram (12K) & LinkedIn (122K) with varied themes. Complimentary channel.',kpi:'1 post/platform/month | 27 posts total',client:0,agency:0,foc:true},
+  {cat:'Digital Marketing',name:'Video Posts (Reels & Facebook)',details:'Video posts on Instagram Reels & Facebook for higher engagement, shared with agents and end clients.',kpi:'4 posts | 2K+ reach each',client:0,agency:0,foc:true},
+  {cat:'Digital Marketing',name:'Travel Bytes App Updates',details:'Monthly update on the Travel Bytes travel news app for travel professionals. 35,000 downloads.',kpi:'9 posts total',client:0,agency:0,foc:true},
+  {cat:'Digital Marketing',name:'TBO Banner Ads',details:'Banners across TBO booking pages with multiple ad spaces targeting agents selling the destination. Different themes each month.',kpi:'Monthly | 2M+ impressions',client:0,agency:0,foc:true},
+  {cat:'Campaign Activities',name:'Technical Development',details:'Rewards page with games, referrals, auto-generated codes, leaderboard & activity calendar. Full microsite setup & launch.',kpi:'On-time microsite launch',client:0,agency:5000,foc:false},
+  {cat:'Campaign Activities',name:'Creative Design',details:'Design & content developed by professionals. Fresh creatives aligned to destination theme across all touchpoints.',kpi:'Per touchpoint',client:0,agency:0,foc:true},
+  {cat:'Campaign Activities',name:'Monthly Reporting & Analysis',details:'Monthly report covering all activities, KPI performance, analysis & breakdown per activity.',kpi:'Monthly report',client:0,agency:0,foc:true},
+  {cat:'Campaign Activities',name:'Internal Staff Training',details:'All TBO sales & ops staff trained to handle client queries. Sessions led by client team.',kpi:'As needed',client:0,agency:0,foc:true},
+];
+
+const defaultTerms = [
+  'All prices are quoted in USD unless otherwise specified.',
+  'FOC (Free of Charge) items are complimentary and subject to availability.',
+  'Campaign materials must be approved by the client before going live.',
+  'Monthly reports shared within 5 business days of the following month.',
+  'Either party may terminate with 30 days written notice.',
+  'Changes to scope require a written amendment signed by both parties.',
+  'Confidentiality of all shared data and insights is guaranteed by both parties.',
+];
+
+let services = defaultServices.map(s=>({...s}));
+let terms = [...defaultTerms];
+
+// ── RENDER BUILDER SERVICES ──
+function renderServices() {
+  const list = document.getElementById('services-list');
+  list.innerHTML = '';
+  services.forEach((s,i) => {
+    const card = document.createElement('div');
+    card.className = 'svc-card';
+    card.innerHTML = `
+      <div class="svc-header" onclick="toggleSvc(${i},event)">
+        <div class="drag-dots"><span></span><span></span><span></span></div>
+        <div class="svc-name-col">
+          <div class="svc-name">${esc(s.name)}</div>
+          <div class="svc-cat-label">${esc(s.cat)}</div>
+        </div>
+        <div class="svc-kpi">${esc(s.kpi||'—')}</div>
+        <div>${s.foc ? '<span class="foc-pill">FOC</span>' : '<span class="paid-pill">Paid</span>'}</div>
+        <div class="svc-amt c">
+          <input type="number" class="inline-amt" value="${s.foc?0:s.client}" min="0" ${s.foc?'disabled':''} onclick="event.stopPropagation()" oninput="upd(${i},'client',+this.value)" style="color:var(--coral);" title="Client Share">
+        </div>
+        <div class="svc-amt a">
+          <input type="number" class="inline-amt" value="${s.foc?0:s.agency}" min="0" ${s.foc?'disabled':''} onclick="event.stopPropagation()" oninput="upd(${i},'agency',+this.value)" title="TBO Share">
+        </div>
+        <button class="svc-chevron"><i class="fa-solid fa-chevron-down"></i></button>
+      </div>
+      <div class="svc-body">
+        <div class="svc-form">
+          ${pillField('Service Name',`<input type="text" value="${esc(s.name)}" oninput="upd(${i},'name',this.value)">`,true)}
+          ${pillField('Category',`<select onchange="upd(${i},'cat',this.value)">
+              ${['Brand Positioning','Trade Training & Engagement','Reward Program','Product of the Week','Digital Marketing','Campaign Activities','Custom'].map(c=>`<option ${c===s.cat?'selected':''}>${c}</option>`).join('')}
+            </select>`)}
+          ${pillField('KPI / Target',`<input type="text" value="${esc(s.kpi)}" oninput="upd(${i},'kpi',this.value)">`)}
+          ${pillField('Details / Description',`<textarea oninput="upd(${i},'details',this.value)">${esc(s.details)}</textarea>`,true)}
+          ${pillField(`Client Share (${currency})`,`<div class="currency-wrap">${curIconHtml()}<input type="number" class="currency" value="${s.client}" min="0" oninput="upd(${i},'client',+this.value)"></div>`)}
+          ${pillField(`TBO Share (${currency})`,`<div class="currency-wrap">${curIconHtml()}<input type="number" class="currency" value="${s.agency}" min="0" oninput="upd(${i},'agency',+this.value)"></div>`)}
+          <div class="field"><label class="field-check"><input type="checkbox" ${s.foc?'checked':''} onchange="upd(${i},'foc',this.checked)">Mark as FOC</label></div>
+        </div>
+        <div class="svc-actions"><button class="btn-remove" onclick="removeSvc(${i})">Remove service</button></div>
+      </div>`;
+    list.appendChild(card);
+  });
+  updateBudget();
+  document.getElementById('svc-count-tag').innerHTML = '<i class="fa-solid fa-cube" style="margin-right:4px;font-size:10px;"></i>'+services.length+' services';
+}
+
+function toggleSvc(i, e) {
+  if(e.target.closest('.svc-body')||e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT'||e.target.tagName==='BUTTON'&&!e.target.classList.contains('svc-chevron')) return;
+  const cards = document.querySelectorAll('.svc-card');
+  cards[i].classList.toggle('open');
+}
+
+function upd(i,k,v) {
+  services[i][k]=v;
+  if(['client','agency'].includes(k)) updateBudget();
+  if(['name','cat','kpi','foc'].includes(k)) renderServices();
+}
+
+function removeSvc(i) {
+  services.splice(i,1);
+  renderServices();
+  toast('Service removed','success');
+}
+
+function addService() {
+  const name = document.getElementById('n-name').value.trim();
+  if(!name){ toast('Enter a service name','error'); return; }
+  services.push({
+    cat: document.getElementById('n-cat').value,
+    name, details:'',
+    kpi: document.getElementById('n-kpi').value,
+    client: +document.getElementById('n-client').value||0,
+    agency: +document.getElementById('n-agency').value||0,
+    foc: document.getElementById('n-foc').checked
+  });
+  ['n-name','n-kpi','n-client','n-agency'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('n-foc').checked=false;
+  renderServices();
+  toast('Service added','success');
+}
+
+// ── BUDGET ──
+function updateBudget() {
+  const tc = services.filter(s=>!s.foc).reduce((a,s)=>a+s.client,0);
+  const ta = services.filter(s=>!s.foc).reduce((a,s)=>a+s.agency,0);
+  document.getElementById('b-client').textContent = sym[currency]+(tc||0).toLocaleString();
+  document.getElementById('b-agency').textContent = sym[currency]+(ta||0).toLocaleString();
+  document.getElementById('b-total').textContent  = sym[currency]+(tc+ta).toLocaleString();
+}
+
+function setCurrency(c){ currency=c; updateCurrencyUI(); renderServices(); }
+
+// ── TERMS ──
+function renderTerms() {
+  const list = document.getElementById('terms-list');
+  list.innerHTML='';
+  terms.forEach((t,i)=>{
+    const row = document.createElement('div');
+    row.className='term-row';
+    row.innerHTML=`<span style="font-size:10px;font-weight:600;color:var(--muted);min-width:16px;">${i+1}.</span><input type="text" value="${esc(t)}" oninput="terms[${i}]=this.value"><button class="btn-rm-term" onclick="rmTerm(${i})">✕</button>`;
+    list.appendChild(row);
+  });
+}
+function addTerm(){ terms.push(''); renderTerms(); document.querySelectorAll('.term-row input')[terms.length-1].focus(); }
+function rmTerm(i){ terms.splice(i,1); renderTerms(); }
+
+// ── NAVIGATION ──
+function jumpTo(id,btn) {
+  document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── PREVIEW & PRINT ──
+function showPreview() {
+  buildPreview();
+  document.getElementById('view-builder').style.display='none';
+  document.getElementById('view-preview').style.display='block';
+  window.scrollTo(0,0);
+}
+
+function backToBuilder() {
+  document.getElementById('view-preview').style.display='none';
+  document.getElementById('view-builder').style.display='block';
+  window.scrollTo(0,0);
+}
+
+function buildPreview() {
+  // Header
+  document.getElementById('p-title').textContent = v('f-title') || 'Campaign Proposal';
+  document.getElementById('p-subtitle').textContent = v('f-markets') ? `B2B Marketing Campaign — ${v('f-markets')}` : 'B2B Marketing Campaign';
+  document.getElementById('p-period').textContent = v('f-period') || '—';
+  document.getElementById('p-by').textContent = v('f-agency') || 'TBO Academy';
+  const pd = v('f-pdate');
+  document.getElementById('p-date').textContent = pd ? new Date(pd).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+
+  // Meta strip - dynamic columns
+  const tc = services.filter(s=>!s.foc).reduce((a,s)=>a+s.client,0);
+  const ta = services.filter(s=>!s.foc).reduce((a,s)=>a+s.agency,0);
+  const metas = [
+    {label:'Client', value: v('f-client')||'—'},
+    {label:'Target Markets', value: v('f-markets')||'—'},
+    {label:'Campaign Period', value: v('f-period')||'—'},
+    {label:'Client Investment', value: sym[currency]+tc.toLocaleString(), coral:true},
+    {label:'Total Budget', value: sym[currency]+(tc+ta).toLocaleString(), coral:true},
+  ];
+  const strip = document.getElementById('p-meta-strip');
+  strip.style.gridTemplateColumns = `repeat(${metas.length},1fr)`;
+  strip.innerHTML = metas.map(m=>`<div class="meta-cell"><div class="meta-label">${m.label}</div><div class="meta-value${m.coral?' coral':''}">${m.value}</div></div>`).join('');
+
+  // Table
+  const tbody = document.getElementById('p-tbody');
+  tbody.innerHTML='';
+  let totClient=0, totAgency=0;
+  let i = 0;
+  let catGroupIndex = 0;
+  while (i < services.length) {
+    const cat = services[i].cat;
+    let j = i;
+    while (j < services.length && services[j].cat === cat) j++;
+    const span = j - i;
+    const stripeClass = catGroupIndex % 2 === 0 ? 'cat-stripe-a' : 'cat-stripe-b';
+    for (let k = i; k < j; k++) {
+      const s = services[k];
+      const tr = document.createElement('tr');
+      tr.className = stripeClass;
+      const catCell = k === i ? `<td class="cat ${stripeClass}" rowspan="${span}">${esc(s.cat)}</td>` : '';
+      tr.innerHTML = `
+        ${catCell}
+        <td class="tp">${esc(s.name)}${s.foc ? '<br><span class="p-foc">FOC</span>' : ''}</td>
+        <td class="det">${esc(s.details)}</td>
+        <td class="kpi">${esc(s.kpi || '—')}</td>
+        <td class="amt cl">${s.foc ? '<span class="p-foc">FOC</span>' : (s.client > 0 ? fmt(s.client) : '—')}</td>
+        <td class="amt ag">${s.foc ? '<span class="p-foc">FOC</span>' : (s.agency > 0 ? fmt(s.agency) : '—')}</td>`;
+      tbody.appendChild(tr);
+      if (!s.foc) { totClient += s.client; totAgency += s.agency; }
+    }
+    catGroupIndex++;
+    i = j;
+  }
+  const tot=document.createElement('tr'); tot.className='totals-row';
+  tot.innerHTML=`<td colspan="4" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;">Total Investment</td><td class="amt cl">${sym[currency]}${totClient.toLocaleString()}</td><td class="amt ag">${sym[currency]}${totAgency.toLocaleString()}</td>`;
+  tbody.appendChild(tot);
+
+  // Footer
+  document.getElementById('p-footnote').textContent = v('f-footnote')||v('f-budget-notes')||'';
+  document.getElementById('p-sig-name').textContent = v('f-agency')||'';
+  document.getElementById('p-sig-email').textContent = v('f-aemail')||'';
+}
+
+// ── UTILS ──
+function v(id){ return document.getElementById(id)?.value||''; }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function toast(msg,type='info'){
+  const icons={success:'fa-circle-check',error:'fa-circle-xmark',warning:'fa-triangle-exclamation',info:'fa-circle-info'};
+  const container=document.getElementById('toast-container');
+  const t=document.createElement('div');
+  t.className='toast-item toast-'+type;
+  t.innerHTML=`<i class="fa-solid ${icons[type]||icons.info}"></i><span>${esc(msg)}</span>`;
+  container.appendChild(t);
+  setTimeout(()=>{ t.style.animation='toastOut .25s ease forwards'; setTimeout(()=>t.remove(),250); },3200);
+}
+const FORM_FIELD_IDS = [
+  'f-title','f-desc','f-period','f-markets','f-start','f-end',
+  'f-client','f-contact','f-cemail','f-cphone','f-agency','f-aname','f-aemail',
+  'f-pdate','f-valid','f-footnote','f-budget-notes'
+];
+
+function clearFormFields(){
+  FORM_FIELD_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.value = '';
+  });
+}
+
+function clearAddServiceRow(){
+  ['n-name','n-kpi','n-client','n-agency'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  const foc = document.getElementById('n-foc');
+  if(foc) foc.checked = false;
+  const cat = document.getElementById('n-cat');
+  if(cat) cat.selectedIndex = 0;
+}
+
+function resetAll(){
+  clearFormFields();
+  clearAddServiceRow();
+  services = [];
+  terms = [];
+  currency = 'USD';
+  renderServices();
+  renderTerms();
+  updateCurrencyUI();
+  updateBudget();
+  toast('All fields cleared','success');
+}
+
+// ── INIT ──
+document.getElementById('f-pdate').value = new Date().toISOString().split('T')[0];
+document.addEventListener('click', e => { if(!e.target.closest('#currency-dropdown')) closeCurrencyDropdown(); });
+updateCurrencyUI();
+renderServices();
+renderTerms();
+</script>
+
+
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signInWithEmailAndPassword,
+    sendPasswordResetEmail,
+    setPersistence,
+    browserLocalPersistence,
+    browserSessionPersistence,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDO9aR5ikhV1G7f--8NcpgYyLSbJ35Wqxk",
+    authDomain: "tbo-proposal-builder-aa1ed.firebaseapp.com",
+    projectId: "tbo-proposal-builder-aa1ed",
+    storageBucket: "tbo-proposal-builder-aa1ed.firebasestorage.app",
+    messagingSenderId: "658579137525",
+    appId: "1:658579137525:web:70677ef7035b1b8c47f6bc"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  auth.useDeviceLanguage();
+
+  const authView = document.getElementById('auth-view');
+  const builderView = document.getElementById('view-builder');
+  const previewView = document.getElementById('view-preview');
+  const loginForm = document.getElementById('login-form');
+  const loginEmail = document.getElementById('login-email');
+  const loginPassword = document.getElementById('login-password');
+  const rememberMe = document.getElementById('remember-me');
+  const authError = document.getElementById('auth-error');
+  const googleLoginBtn = document.getElementById('google-login-btn');
+  const forgotPasswordBtn = document.getElementById('forgot-password');
+  const togglePasswordBtn = document.getElementById('toggle-password');
+  const logoutBtn = document.getElementById('logout-btn');
+  const authUserBox = document.getElementById('auth-user-box');
+  const authUserName = document.getElementById('auth-user-name');
+  const authUserEmail = document.getElementById('auth-user-email');
+
+  function showAuthError(message){
+    authError.textContent = message;
+    authError.style.display = 'block';
+  }
+
+  function clearAuthError(){
+    authError.textContent = '';
+    authError.style.display = 'none';
+  }
+
+  function friendlyAuthError(error){
+    const code = error?.code || '';
+    if(code.includes('auth/invalid-credential') || code.includes('auth/wrong-password')) return 'Invalid email or password.';
+    if(code.includes('auth/user-not-found')) return 'No account found with this email.';
+    if(code.includes('auth/popup-closed-by-user')) return 'Google sign-in popup was closed before completion.';
+    if(code.includes('auth/unauthorized-domain')) return 'This domain is not authorized in Firebase Authentication settings.';
+    if(code.includes('auth/operation-not-allowed')) return 'This sign-in method is not enabled in Firebase Console.';
+    if(code.includes('auth/too-many-requests')) return 'Too many attempts. Please try again later.';
+    return error?.message || 'Sign-in failed. Please try again.';
+  }
+
+  async function applyPersistence(){
+    await setPersistence(auth, rememberMe.checked ? browserLocalPersistence : browserSessionPersistence);
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearAuthError();
+    try{
+      await applyPersistence();
+      await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value);
+    }catch(error){
+      showAuthError(friendlyAuthError(error));
+    }
+  });
+
+  googleLoginBtn.addEventListener('click', async () => {
+    clearAuthError();
+    try{
+      await applyPersistence();
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      await signInWithPopup(auth, provider);
+    }catch(error){
+      showAuthError(friendlyAuthError(error));
+    }
+  });
+
+  forgotPasswordBtn.addEventListener('click', async () => {
+    clearAuthError();
+    const email = loginEmail.value.trim();
+    if(!email){
+      showAuthError('Enter your email first, then click Forgot password.');
+      return;
+    }
+    try{
+      await sendPasswordResetEmail(auth, email);
+      showAuthError('Password reset email sent. Please check your inbox.');
+      authError.style.background = '#F0FDF4';
+      authError.style.borderColor = '#BBF7D0';
+      authError.style.color = '#166534';
+      setTimeout(() => {
+        authError.style.background = '#FEF2F2';
+        authError.style.borderColor = '#FECACA';
+        authError.style.color = '#B91C1C';
+      }, 3000);
+    }catch(error){
+      showAuthError(friendlyAuthError(error));
+    }
+  });
+
+  togglePasswordBtn.addEventListener('click', () => {
+    const isPassword = loginPassword.type === 'password';
+    loginPassword.type = isPassword ? 'text' : 'password';
+    togglePasswordBtn.innerHTML = isPassword ? '<i class="fa-regular fa-eye-slash"></i>' : '<i class="fa-regular fa-eye"></i>';
+    togglePasswordBtn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+  });
+
+  logoutBtn?.addEventListener('click', async () => {
+    await signOut(auth);
+  });
+
+  onAuthStateChanged(auth, (user) => {
+    if(user){
+      authView.style.display = 'none';
+      previewView.style.display = 'none';
+      builderView.style.display = 'block';
+      if(authUserBox){
+        authUserBox.style.display = 'block';
+        authUserName.textContent = user.displayName || 'Signed in';
+        authUserEmail.textContent = user.email || '';
+      }
+    }else{
+      builderView.style.display = 'none';
+      previewView.style.display = 'none';
+      authView.style.display = 'flex';
+      if(authUserBox) authUserBox.style.display = 'none';
+      loginPassword.value = '';
+    }
+  });
+</script>
+
+</body></html>
