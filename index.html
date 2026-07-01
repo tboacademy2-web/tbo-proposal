@@ -1443,35 +1443,30 @@ async function exportOnePagePDF() {
   }
 
   /*
-    FINAL PDF EXPORT FIX - EXACT PREVIEW COLOURS + ONE PAGE
-    ------------------------------------------------------
-    Root cause of colour/formatting loss:
-    Most preview styles are written as selectors like:
-      #view-preview .doc-header { ... }
-      #view-preview .doc table { ... }
+    FINAL PDF EXPORT FIX - LIVE PREVIEW CAPTURE
+    ------------------------------------------
+    Root cause of the plain/white export:
+    The previous export cloned only the proposal document into a hidden off-screen
+    container. Some preview styles in this file are scoped to #view-preview and
+    browser/canvas rendering did not always apply the same computed colours,
+    stripes, rounded header, FOC pills, borders, and spacing to that clone.
 
-    Earlier, only .doc was cloned into a hidden export area. Because that clone
-    was no longer inside #view-preview, those CSS rules did not apply correctly,
-    so the PDF could lose colours, spacing, table formatting, and header styles.
-
-    Fix:
-    1. Rebuild preview from current form data.
-    2. Clone the designed proposal .doc.
-    3. Put the clone inside a temporary wrapper with id="view-preview" so the
-       exact same preview CSS applies during capture.
-    4. Render the full styled proposal to a high-resolution canvas.
-    5. Scale the full canvas into ONE A4 landscape PDF page.
-
-    Result:
-    - PDF keeps the same blue header, orange category cells, striped rows,
-      FOC pills, fonts, spacing, borders, and alignment as preview.
-    - No browser headers/footers/page URL/page numbers.
-    - No multi-page split.
-    - No cropping or truncation.
+    Production-safe fix:
+    1. Build/update the preview from the current form values.
+    2. Capture the LIVE visible preview card (#view-preview .doc) exactly as it is
+       displayed on screen. This preserves computed colours, fonts, spacing,
+       borders, table formatting, icons, and alignment.
+    3. Convert the full preview card into one high-resolution canvas.
+    4. Fit the full canvas proportionally onto ONE A4 landscape PDF page.
+       Nothing is cropped or truncated; if content is long, it shrinks to fit.
+    5. Because this uses jsPDF instead of browser print, no browser header,
+       footer, URL, page title, or page numbers are added.
   */
 
   buildPreview();
 
+  const previewView = document.getElementById('view-preview');
+  const builderView = document.getElementById('view-builder');
   const sourceDoc = document.querySelector('#view-preview .doc');
   const exportButton = document.querySelector('.btn-print');
 
@@ -1491,145 +1486,94 @@ async function exportOnePagePDF() {
     exportButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting PDF...';
   }
 
-  // A4 landscape page size.
+  // Make sure preview is the active visible view before capture.
+  // This is important because html2canvas captures computed on-screen styles.
+  const previousBuilderDisplay = builderView ? builderView.style.display : '';
+  const previousPreviewDisplay = previewView ? previewView.style.display : '';
+  if (builderView) builderView.style.display = 'none';
+  if (previewView) previewView.style.display = 'block';
+
+  // A4 landscape dimensions in millimeters.
   const PAGE_WIDTH_MM = 297;
   const PAGE_HEIGHT_MM = 210;
+  const PDF_PADDING_MM = 0; // keep full-bleed like preview screenshot
 
-  // High-resolution canvas with the same A4 landscape aspect ratio.
-  // Larger width gives sharper text after the proposal is shrunk onto one page.
-  const EXPORT_WIDTH_PX = 2600;
-  const EXPORT_HEIGHT_PX = Math.round(EXPORT_WIDTH_PX * PAGE_HEIGHT_MM / PAGE_WIDTH_MM);
-
-  // Hidden export stage. It is off-screen but still rendered by the browser.
-  const stage = document.createElement('div');
-  stage.id = 'single-page-pdf-stage';
-  stage.setAttribute('aria-hidden', 'true');
-  stage.style.position = 'fixed';
-  stage.style.left = '-100000px';
-  stage.style.top = '0';
-  stage.style.width = EXPORT_WIDTH_PX + 'px';
-  stage.style.height = EXPORT_HEIGHT_PX + 'px';
-  stage.style.overflow = 'hidden';
-  stage.style.background = '#ffffff';
-  stage.style.margin = '0';
-  stage.style.padding = '0';
-  stage.style.zIndex = '-1';
-
-  // IMPORTANT: Wrapper id must be view-preview so existing preview CSS applies.
-  const previewWrapper = document.createElement('div');
-  previewWrapper.id = 'view-preview';
-  previewWrapper.style.display = 'block';
-  previewWrapper.style.width = EXPORT_WIDTH_PX + 'px';
-  previewWrapper.style.minHeight = '0';
-  previewWrapper.style.height = 'auto';
-  previewWrapper.style.padding = '0';
-  previewWrapper.style.margin = '0';
-  previewWrapper.style.background = '#ffffff';
-  previewWrapper.style.overflow = 'visible';
-
-  const clone = sourceDoc.cloneNode(true);
-
-  // Preserve the same visible preview width, then scale it into one page.
-  const screenWidth = Math.ceil(sourceDoc.getBoundingClientRect().width || sourceDoc.offsetWidth || 1140);
-  clone.style.width = screenWidth + 'px';
-  clone.style.maxWidth = 'none';
-  clone.style.margin = '0';
-  clone.style.transformOrigin = 'top left';
-
-  // Keep preview fidelity: do NOT remove borders, colours, radii, table stripes,
-  // category backgrounds, or text formatting. Only remove heavy shadow if it causes
-  // browser-specific artifacts; the main design remains unchanged.
-  clone.style.background = '#ffffff';
-
-  previewWrapper.appendChild(clone);
-  stage.appendChild(previewWrapper);
-  document.body.appendChild(stage);
+  // Temporarily remove animation/transition effects only during capture.
+  const captureStyle = document.createElement('style');
+  captureStyle.id = 'pdf-live-capture-style';
+  captureStyle.textContent = `
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    #view-preview .doc,
+    #view-preview .doc * {
+      animation: none !important;
+      transition: none !important;
+    }
+    #view-preview .doc-header,
+    #view-preview .doc thead tr,
+    #view-preview .doc thead th,
+    #view-preview .totals-row td {
+      background-color: #1E6FD9 !important;
+      color: #ffffff !important;
+    }
+    #view-preview .doc td.cat {
+      background-color: #FFF4EC !important;
+      color: #FF6A13 !important;
+      border-color: #F5D0B8 !important;
+    }
+    #view-preview .doc td.cat.cat-stripe-b {
+      background-color: #FFE8D6 !important;
+      border-color: #F0C9A8 !important;
+    }
+    #view-preview .doc tbody tr.cat-stripe-a {
+      background-color: #ffffff !important;
+    }
+    #view-preview .doc tbody tr.cat-stripe-b {
+      background-color: #F1F5F9 !important;
+    }
+    #view-preview .p-foc {
+      background-color: #E0F0E8 !important;
+      color: #1E6B3A !important;
+    }
+    #view-preview .doc td.amt.cl {
+      color: #FF6A13 !important;
+    }
+    #view-preview .totals-row .amt.cl {
+      color: #ffba91 !important;
+    }
+    #view-preview .totals-row .amt.ag {
+      color: #E8F2FF !important;
+    }
+  `;
+  document.head.appendChild(captureStyle);
 
   try {
-    // Ensure fonts and layout are fully ready before capture.
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
     await new Promise(resolve => requestAnimationFrame(resolve));
-    await new Promise(resolve => setTimeout(resolve, 120));
+    await new Promise(resolve => setTimeout(resolve, 150));
 
-    const naturalWidth = Math.max(clone.scrollWidth, clone.offsetWidth, 1);
-    const naturalHeight = Math.max(clone.scrollHeight, clone.offsetHeight, 1);
+    const rect = sourceDoc.getBoundingClientRect();
+    const fullWidth = Math.ceil(Math.max(sourceDoc.scrollWidth, sourceDoc.offsetWidth, rect.width, 1));
+    const fullHeight = Math.ceil(Math.max(sourceDoc.scrollHeight, sourceDoc.offsetHeight, rect.height, 1));
 
-    // Fit the entire proposal inside one A4 landscape canvas.
-    // Both width and height are considered, so nothing is cropped.
-    const fitScale = Math.min(EXPORT_WIDTH_PX / naturalWidth, EXPORT_HEIGHT_PX / naturalHeight);
-    const scaledWidth = naturalWidth * fitScale;
-    const scaledHeight = naturalHeight * fitScale;
-
-    clone.style.transform = `scale(${fitScale})`;
-
-    // Center the scaled proposal within the PDF page while keeping preview layout.
-    clone.style.marginLeft = Math.max(0, (EXPORT_WIDTH_PX - scaledWidth) / 2) + 'px';
-    clone.style.marginTop = Math.max(0, (EXPORT_HEIGHT_PX - scaledHeight) / 2) + 'px';
-
-    await new Promise(resolve => requestAnimationFrame(resolve));
-
-    const canvas = await html2canvas(stage, {
+    // Capture the entire live preview card, not just the visible viewport.
+    const canvas = await html2canvas(sourceDoc, {
       backgroundColor: '#ffffff',
       useCORS: true,
       allowTaint: true,
       logging: false,
-      scale: 2,
-      width: EXPORT_WIDTH_PX,
-      height: EXPORT_HEIGHT_PX,
-      windowWidth: EXPORT_WIDTH_PX,
-      windowHeight: EXPORT_HEIGHT_PX,
+      scale: Math.min(2.5, Math.max(2, window.devicePixelRatio || 2)),
+      width: fullWidth,
+      height: fullHeight,
+      windowWidth: Math.max(document.documentElement.clientWidth, fullWidth),
+      windowHeight: Math.max(document.documentElement.clientHeight, fullHeight),
       scrollX: 0,
-      scrollY: 0,
-      onclone: (clonedDocument) => {
-        // Extra safety: force exact colour printing and visible preview styles in the cloned document.
-        const style = clonedDocument.createElement('style');
-        style.textContent = `
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-            box-sizing: border-box !important;
-          }
-          #single-page-pdf-stage, #view-preview {
-            background: #ffffff !important;
-          }
-          #view-preview .doc-header,
-          #view-preview .doc thead tr,
-          #view-preview .doc thead th,
-          #view-preview .totals-row td {
-            background: var(--blue) !important;
-            color: #ffffff !important;
-          }
-          #view-preview .doc td.cat {
-            background: var(--orange-light) !important;
-            color: var(--orange) !important;
-            border: 1px solid #F5D0B8 !important;
-          }
-          #view-preview .doc td.cat.cat-stripe-b {
-            background: #FFE8D6 !important;
-            border-color: #F0C9A8 !important;
-          }
-          #view-preview .doc tbody tr.cat-stripe-a {
-            background: var(--white) !important;
-          }
-          #view-preview .doc tbody tr.cat-stripe-b {
-            background: var(--bg-subtle) !important;
-          }
-          #view-preview .p-foc {
-            background: var(--green-bg) !important;
-            color: var(--green) !important;
-          }
-          #view-preview .doc td.amt.cl,
-          #view-preview .totals-row .amt.cl {
-            color: var(--orange) !important;
-          }
-        `;
-        clonedDocument.head.appendChild(style);
-      }
+      scrollY: 0
     });
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.98);
     const { jsPDF } = window.jspdf;
-
     const pdf = new jsPDF({
       orientation: 'landscape',
       unit: 'mm',
@@ -1637,8 +1581,28 @@ async function exportOnePagePDF() {
       compress: true
     });
 
-    // One image on one page = no default browser header/footer and no page split.
-    pdf.addImage(imgData, 'JPEG', 0, 0, PAGE_WIDTH_MM, PAGE_HEIGHT_MM, undefined, 'FAST');
+    // Fit the full preview image into one A4 landscape page without cropping.
+    const usableWidth = PAGE_WIDTH_MM - (PDF_PADDING_MM * 2);
+    const usableHeight = PAGE_HEIGHT_MM - (PDF_PADDING_MM * 2);
+    const imgRatio = canvas.width / canvas.height;
+    const pageRatio = usableWidth / usableHeight;
+
+    let drawWidth;
+    let drawHeight;
+
+    if (imgRatio > pageRatio) {
+      drawWidth = usableWidth;
+      drawHeight = usableWidth / imgRatio;
+    } else {
+      drawHeight = usableHeight;
+      drawWidth = usableHeight * imgRatio;
+    }
+
+    const x = PDF_PADDING_MM + (usableWidth - drawWidth) / 2;
+    const y = PDF_PADDING_MM + (usableHeight - drawHeight) / 2;
+
+    const imgData = canvas.toDataURL('image/png');
+    pdf.addImage(imgData, 'PNG', x, y, drawWidth, drawHeight, undefined, 'FAST');
 
     const filenameBase = (v('f-client') || 'proposal-builder')
       .toLowerCase()
@@ -1646,12 +1610,17 @@ async function exportOnePagePDF() {
       .replace(/^-+|-+$/g, '') || 'proposal-builder';
 
     pdf.save(`${filenameBase}-proposal.pdf`);
-    toast('PDF exported with preview colours and formatting', 'success');
+    toast('PDF exported exactly like preview in one page', 'success');
   } catch (err) {
     console.error(err);
     toast('PDF export failed. Open Console for error details.', 'error');
   } finally {
-    stage.remove();
+    captureStyle.remove();
+
+    // Keep the user in preview after export, unless their previous state was different.
+    if (previewView) previewView.style.display = previousPreviewDisplay || 'block';
+    if (builderView) builderView.style.display = previousBuilderDisplay || 'none';
+
     if (exportButton) {
       exportButton.disabled = false;
       exportButton.innerHTML = oldButtonHTML;
