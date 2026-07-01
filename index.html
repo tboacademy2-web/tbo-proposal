@@ -852,17 +852,6 @@
   .auth-user-box strong{display:block;color:#fff;font-size:13px;margin-bottom:2px;}
   @media(max-width:520px){#auth-view{padding:1rem}.auth-card{padding:24px 20px}.auth-title{font-size:25px}}
 
-  /* HARD FRONTEND ACCESS LOCK: builder/preview stay hidden unless allowed email is verified */
-  body:not(.auth-ok) #view-builder,
-  body:not(.auth-ok) #view-preview {
-    display: none !important;
-    visibility: hidden !important;
-  }
-
-  body.auth-ok #auth-view {
-    display: none !important;
-  }
-
 </style>
 </head>
 <body>
@@ -900,7 +889,7 @@
         Continue with Google
       </button>
 
-      <p class="auth-note">Only authorized account can access this builder.</p>
+      <p class="auth-note">Use your authorized Firebase account to access the builder.</p>
     </section>
   </div>
 </div>
@@ -969,7 +958,7 @@
       </button>
       <button class="btn-export" onclick="showPreview()">
         <i class="fa-solid fa-eye"></i>
-        <span class="btn-label">Preview &amp; Export Word</span>
+        <span class="btn-label">Preview &amp; Export PDF</span>
       </button>
       <button class="btn-ghost" onclick="resetAll()">
         <i class="fa-solid fa-rotate-left"></i>
@@ -1133,9 +1122,9 @@
         <i class="fa-solid fa-arrow-left"></i>
         Back to Builder
       </button>
-      <button class="btn-print" onclick="exportWordDocx()">
-        <i class="fa-solid fa-file-word"></i>
-        Export Word (.docx)
+      <button class="btn-print" onclick="exportOnePagePDF()">
+        <i class="fa-solid fa-file-pdf"></i>
+        Export PDF
       </button>
     </div>
   </div>
@@ -1192,7 +1181,7 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 <script>
 // ── STATE ──
@@ -1438,288 +1427,131 @@ function prepareOnePagePrint() {
   document.documentElement.style.setProperty('--print-scale', scale.toFixed(3));
 }
 
-async function exportWordDocx() {
-  // ✅ Real Microsoft Word export (.docx)
-  // This does NOT use PDF, canvas, browser print, or image-only export.
-  // The proposal is exported as editable Word text + table.
+async function exportOnePagePDF() {
+  // ✅ Guaranteed one-page PDF export.
+  // It does NOT use window.print() and does NOT allow browser pagination.
+  // It converts the complete proposal into one image, then places that image on one A4 landscape PDF page.
   buildPreview();
 
+  const sourceDoc = document.querySelector('#view-preview .doc');
   const exportButton = document.querySelector('.btn-print');
 
-  if (!window.docx) {
-    toast('DOCX export library not loaded. Use localhost/Firebase Hosting and check internet.', 'error');
+  if (!sourceDoc) {
+    toast('Preview document not found', 'error');
+    return;
+  }
+
+  if (typeof html2canvas === 'undefined' || !window.jspdf || !window.jspdf.jsPDF) {
+    toast('PDF libraries not loaded. Run using localhost/Firebase Hosting and check internet.', 'error');
     return;
   }
 
   const oldButtonHTML = exportButton ? exportButton.innerHTML : '';
   if (exportButton) {
     exportButton.disabled = true;
-    exportButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting DOCX...';
+    exportButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
   }
 
+  // A4 landscape ratio. Bigger pixels = clearer PDF, still one page.
+  const PAGE_WIDTH_PX = 1600;
+  const PAGE_HEIGHT_PX = 1131;
+  const PAGE_WIDTH_MM = 297;
+  const PAGE_HEIGHT_MM = 210;
+
+  const pdfStage = document.createElement('div');
+  pdfStage.id = 'pdf-one-page-stage';
+  pdfStage.style.position = 'fixed';
+  pdfStage.style.left = '-99999px';
+  pdfStage.style.top = '0';
+  pdfStage.style.width = PAGE_WIDTH_PX + 'px';
+  pdfStage.style.height = PAGE_HEIGHT_PX + 'px';
+  pdfStage.style.overflow = 'hidden';
+  pdfStage.style.background = '#ffffff';
+  pdfStage.style.margin = '0';
+  pdfStage.style.padding = '0';
+
+  const clone = sourceDoc.cloneNode(true);
+  clone.style.margin = '0';
+  clone.style.boxShadow = 'none';
+  clone.style.borderRadius = '0';
+  clone.style.maxWidth = 'none';
+  clone.style.width = '1140px';
+  clone.style.background = '#ffffff';
+  clone.style.transformOrigin = 'top left';
+
+  // Make the proposal more compact before final scaling.
+  clone.querySelectorAll('.doc-header').forEach(el => el.style.padding = '12px 18px');
+  clone.querySelectorAll('.doc-header h1').forEach(el => { el.style.fontSize = '18px'; el.style.lineHeight = '1.15'; });
+  clone.querySelectorAll('.doc-header p, .h-meta').forEach(el => { el.style.fontSize = '9px'; el.style.lineHeight = '1.2'; });
+  clone.querySelectorAll('.meta-cell').forEach(el => el.style.padding = '7px 10px');
+  clone.querySelectorAll('.meta-label').forEach(el => { el.style.fontSize = '8px'; el.style.marginBottom = '2px'; });
+  clone.querySelectorAll('.meta-value').forEach(el => { el.style.fontSize = '9px'; el.style.lineHeight = '1.15'; });
+  clone.querySelectorAll('thead th').forEach(el => { el.style.fontSize = '8px'; el.style.padding = '3px 7px'; el.style.lineHeight = '1.12'; el.style.position = 'static'; });
+  clone.querySelectorAll('tbody td').forEach(el => { el.style.fontSize = '8px'; el.style.padding = '4px 7px'; el.style.lineHeight = '1.12'; });
+  clone.querySelectorAll('td.det, td.kpi').forEach(el => { el.style.fontSize = '7.4px'; el.style.lineHeight = '1.12'; });
+  clone.querySelectorAll('td.tp').forEach(el => { el.style.fontSize = '8px'; el.style.lineHeight = '1.12'; });
+  clone.querySelectorAll('td.cat').forEach(el => { el.style.fontSize = '7px'; el.style.padding = '4px 5px'; el.style.lineHeight = '1.1'; });
+  clone.querySelectorAll('td.amt').forEach(el => { el.style.fontSize = '7.8px'; el.style.whiteSpace = 'nowrap'; });
+  clone.querySelectorAll('.totals-row td').forEach(el => { el.style.fontSize = '8px'; el.style.padding = '5px 7px'; el.style.lineHeight = '1.1'; });
+  clone.querySelectorAll('.doc-footer').forEach(el => el.style.padding = '7px 14px');
+  clone.querySelectorAll('.footer-note, .footer-sig').forEach(el => { el.style.fontSize = '7.5px'; el.style.lineHeight = '1.12'; });
+  clone.querySelectorAll('.footer-sig strong').forEach(el => el.style.fontSize = '8.2px');
+
+  pdfStage.appendChild(clone);
+  document.body.appendChild(pdfStage);
+
   try {
-    const {
-      Document: DocxDocument,
-      Packer,
-      Paragraph,
-      TextRun,
-      Table,
-      TableRow,
-      TableCell,
-      WidthType,
-      AlignmentType,
-      BorderStyle,
-      VerticalAlign,
-      PageOrientation,
-      ShadingType
-    } = window.docx;
+    // Wait for layout + fonts before measuring.
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    await new Promise(resolve => requestAnimationFrame(resolve));
 
-    const BLUE = '1E6FD9';
-    const ORANGE = 'FF6A13';
-    const ORANGE_LIGHT = 'FFF4EC';
-    const BLUE_LIGHT = 'E8F2FF';
-    const BORDER = 'D9E2EC';
-    const WHITE = 'FFFFFF';
-    const TEXT = '0F172A';
-    const MUTED = '475569';
+    const naturalWidth = Math.max(clone.scrollWidth, clone.offsetWidth, 1);
+    const naturalHeight = Math.max(clone.scrollHeight, clone.offsetHeight, 1);
 
-    const clean = (value) => String(value ?? '')
-      .replace(/\s+/g, ' ')
-      .replace(/[<>]/g, '')
-      .trim();
+    // This is the key: scale complete proposal to fit inside one A4 landscape page.
+    const scaleToFit = Math.min(PAGE_WIDTH_PX / naturalWidth, PAGE_HEIGHT_PX / naturalHeight);
+    clone.style.transform = `scale(${scaleToFit})`;
 
-    const rupeeSafe = (value) => clean(value).replace(/₹/g, 'INR ');
+    await new Promise(resolve => requestAnimationFrame(resolve));
 
-    const tiny = 12;      // 6 pt
-    const bodySize = 13;  // 6.5 pt
-    const small = 14;     // 7 pt
-    const normal = 16;    // 8 pt
-    const titleSize = 24; // 12 pt
-
-    const run = (text, opts = {}) => new TextRun({
-      text: rupeeSafe(text || ''),
-      bold: !!opts.bold,
-      italics: !!opts.italics,
-      color: opts.color || TEXT,
-      size: opts.size || bodySize,
-      font: 'Inter'
+    const canvas = await html2canvas(pdfStage, {
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      scale: 2,
+      width: PAGE_WIDTH_PX,
+      height: PAGE_HEIGHT_PX,
+      windowWidth: PAGE_WIDTH_PX,
+      windowHeight: PAGE_HEIGHT_PX,
+      scrollX: 0,
+      scrollY: 0
     });
 
-    const para = (text, opts = {}) => new Paragraph({
-      children: [run(text, opts)],
-      alignment: opts.alignment || AlignmentType.LEFT,
-      spacing: { before: opts.before || 0, after: opts.after || 0, line: opts.line || 180 },
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
     });
 
-    const cell = (text, opts = {}) => new TableCell({
-      width: opts.width ? { size: opts.width, type: WidthType.PERCENTAGE } : undefined,
-      verticalAlign: opts.vAlign || VerticalAlign.CENTER,
-      shading: opts.shading ? { type: ShadingType.CLEAR, fill: opts.shading } : undefined,
-      margins: {
-        top: opts.marginTop ?? 45,
-        bottom: opts.marginBottom ?? 45,
-        left: opts.marginLeft ?? 70,
-        right: opts.marginRight ?? 70,
-      },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1, color: opts.border || BORDER },
-        bottom: { style: BorderStyle.SINGLE, size: 1, color: opts.border || BORDER },
-        left: { style: BorderStyle.SINGLE, size: 1, color: opts.border || BORDER },
-        right: { style: BorderStyle.SINGLE, size: 1, color: opts.border || BORDER },
-      },
-      children: [para(text, {
-        bold: opts.bold,
-        color: opts.color || TEXT,
-        size: opts.size || bodySize,
-        alignment: opts.alignment || AlignmentType.LEFT,
-        line: opts.line || 160,
-      })],
-    });
+    // One image, one page. No auto page-break is possible here.
+    pdf.addImage(imgData, 'JPEG', 0, 0, PAGE_WIDTH_MM, PAGE_HEIGHT_MM, undefined, 'FAST');
 
-    const blankPara = new Paragraph({ spacing: { after: 45 } });
-
-    const client = clean(v('f-client')) || '—';
-    const markets = clean(v('f-markets')) || '—';
-    const period = clean(v('f-period')) || '—';
-    const agency = clean(v('f-agency')) || 'TBO Academy';
-    const agencyName = clean(v('f-aname')) || agency;
-    const agencyEmail = clean(v('f-aemail')) || '';
-    const proposalDateRaw = v('f-pdate');
-    const proposalDate = proposalDateRaw
-      ? new Date(proposalDateRaw).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-      : new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-    const paidServices = services.filter(s => !s.foc);
-    const totalClient = paidServices.reduce((a, s) => a + Number(s.client || 0), 0);
-    const totalAgency = paidServices.reduce((a, s) => a + Number(s.agency || 0), 0);
-    const totalBudget = totalClient + totalAgency;
-    const money = (n) => n > 0 ? `${sym[currency]}${Number(n).toLocaleString()}` : '—';
-
-    const headerTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders: {
-        top: { style: BorderStyle.NONE, size: 0, color: BLUE },
-        bottom: { style: BorderStyle.NONE, size: 0, color: BLUE },
-        left: { style: BorderStyle.NONE, size: 0, color: BLUE },
-        right: { style: BorderStyle.NONE, size: 0, color: BLUE },
-        insideHorizontal: { style: BorderStyle.NONE, size: 0, color: BLUE },
-        insideVertical: { style: BorderStyle.NONE, size: 0, color: BLUE },
-      },
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({
-              width: { size: 68, type: WidthType.PERCENTAGE },
-              shading: { type: ShadingType.CLEAR, fill: BLUE },
-              margins: { top: 110, bottom: 90, left: 130, right: 130 },
-              borders: { top:{style:BorderStyle.NONE}, bottom:{style:BorderStyle.NONE}, left:{style:BorderStyle.NONE}, right:{style:BorderStyle.NONE} },
-              children: [
-                new Paragraph({ children: [run('Proposal Builder', { color: WHITE, bold: true, size: normal })], spacing: { after: 55 } }),
-                new Paragraph({ children: [run(clean(v('f-title')) || 'Campaign Proposal', { color: WHITE, bold: true, size: titleSize })], spacing: { after: 45 }, alignment: AlignmentType.LEFT }),
-                new Paragraph({ children: [run(`B2B Marketing Campaign — ${markets}`, { color: 'DDEBFF', bold: false, size: small })], spacing: { after: 0 } }),
-              ],
-            }),
-            new TableCell({
-              width: { size: 32, type: WidthType.PERCENTAGE },
-              shading: { type: ShadingType.CLEAR, fill: BLUE },
-              margins: { top: 110, bottom: 90, left: 130, right: 130 },
-              borders: { top:{style:BorderStyle.NONE}, bottom:{style:BorderStyle.NONE}, left:{style:BorderStyle.NONE}, right:{style:BorderStyle.NONE} },
-              children: [
-                para(`Period: ${period}`, { color: WHITE, bold: true, size: small, line: 160 }),
-                para(`Prepared by: ${agency}`, { color: WHITE, bold: true, size: small, line: 160 }),
-                para(`Date: ${proposalDate}`, { color: WHITE, bold: true, size: small, line: 160 }),
-              ],
-            }),
-          ],
-        }),
-      ],
-    });
-
-    const metaTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [new TableRow({
-        children: [
-          cell(`CLIENT\n${client}`, { width: 20, bold: true, size: tiny, shading: WHITE }),
-          cell(`TARGET MARKETS\n${markets}`, { width: 20, bold: true, size: tiny, shading: WHITE }),
-          cell(`CAMPAIGN PERIOD\n${period}`, { width: 20, bold: true, size: tiny, shading: WHITE }),
-          cell(`CLIENT INVESTMENT\n${money(totalClient)}`, { width: 20, bold: true, color: ORANGE, size: tiny, shading: WHITE }),
-          cell(`TOTAL BUDGET\n${money(totalBudget)}`, { width: 20, bold: true, color: ORANGE, size: tiny, shading: WHITE }),
-        ],
-      })],
-    });
-
-    const tableHeader = new TableRow({
-      tableHeader: true,
-      children: [
-        cell('Category', { width: 13, bold: true, color: WHITE, shading: BLUE, size: tiny, alignment: AlignmentType.CENTER }),
-        cell('Touchpoint', { width: 15, bold: true, color: WHITE, shading: BLUE, size: tiny }),
-        cell('Details', { width: 33, bold: true, color: WHITE, shading: BLUE, size: tiny }),
-        cell('KPI / Target', { width: 21, bold: true, color: WHITE, shading: BLUE, size: tiny }),
-        cell('Client', { width: 9, bold: true, color: WHITE, shading: BLUE, size: tiny, alignment: AlignmentType.RIGHT }),
-        cell('TBO', { width: 9, bold: true, color: WHITE, shading: BLUE, size: tiny, alignment: AlignmentType.RIGHT }),
-      ],
-    });
-
-    const serviceRows = services.map((s, idx) => {
-      const shade = idx % 2 === 0 ? WHITE : 'F8FAFC';
-      const typeText = s.foc ? 'FOC' : 'Paid';
-      return new TableRow({
-        cantSplit: true,
-        children: [
-          cell(clean(s.cat), { width: 13, bold: true, color: ORANGE, shading: ORANGE_LIGHT, size: tiny, alignment: AlignmentType.CENTER, line: 135 }),
-          cell(`${clean(s.name)}${s.foc ? ' (FOC)' : ''}`, { width: 15, bold: true, size: bodySize, shading: shade, line: 135 }),
-          cell(clean(s.details), { width: 33, size: tiny, color: MUTED, shading: shade, line: 132 }),
-          cell(`${clean(s.kpi)}${typeText ? ' | ' + typeText : ''}`, { width: 21, size: tiny, color: MUTED, shading: shade, line: 132 }),
-          cell(s.foc ? '—' : money(s.client), { width: 9, bold: true, color: ORANGE, size: tiny, shading: shade, alignment: AlignmentType.RIGHT, line: 132 }),
-          cell(s.foc ? '—' : money(s.agency), { width: 9, bold: true, color: BLUE, size: tiny, shading: shade, alignment: AlignmentType.RIGHT, line: 132 }),
-        ],
-      });
-    });
-
-    const totalsRow = new TableRow({
-      children: [
-        cell('Total', { width: 13, bold: true, color: WHITE, shading: BLUE, size: small }),
-        cell('', { width: 15, color: WHITE, shading: BLUE, size: small }),
-        cell('', { width: 33, color: WHITE, shading: BLUE, size: small }),
-        cell('Combined Campaign Budget', { width: 21, bold: true, color: WHITE, shading: BLUE, size: small }),
-        cell(money(totalClient), { width: 9, bold: true, color: 'FFBA91', shading: BLUE, size: small, alignment: AlignmentType.RIGHT }),
-        cell(money(totalAgency), { width: 9, bold: true, color: 'DDEBFF', shading: BLUE, size: small, alignment: AlignmentType.RIGHT }),
-      ],
-    });
-
-    const proposalTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [tableHeader, ...serviceRows, totalsRow],
-    });
-
-    const footerTable = new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [new TableRow({
-        children: [
-          cell(clean(v('f-footnote')) || clean(v('f-budget-notes')) || '', { width: 72, size: tiny, color: MUTED, shading: 'F1F5F9', line: 135 }),
-          cell(`${agencyName}\n${agencyEmail}`, { width: 28, bold: true, size: tiny, color: TEXT, shading: 'F1F5F9', alignment: AlignmentType.RIGHT, line: 135 }),
-        ],
-      })],
-    });
-
-    const doc = new DocxDocument({
-      creator: 'Proposal Builder',
-      title: clean(v('f-title')) || 'Campaign Proposal',
-      description: 'Exported from Proposal Builder',
-      styles: {
-        default: {
-          document: {
-            run: { font: 'Inter', size: bodySize, color: TEXT },
-            paragraph: { spacing: { after: 0, line: 160 } },
-          },
-        },
-      },
-      sections: [{
-        properties: {
-          page: {
-            size: {
-              orientation: PageOrientation.LANDSCAPE,
-              width: 16838,
-              height: 11906,
-            },
-            margin: {
-              top: 220,
-              right: 220,
-              bottom: 220,
-              left: 220,
-            },
-          },
-        },
-        children: [
-          headerTable,
-          metaTable,
-          blankPara,
-          proposalTable,
-          footerTable,
-        ],
-      }],
-    });
-
-    const blob = await Packer.toBlob(doc);
     const filenameBase = (v('f-client') || 'proposal-builder')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'proposal-builder';
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${filenameBase}-proposal.docx`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-
-    toast('Editable Word DOCX exported', 'success');
+    pdf.save(`${filenameBase}-proposal.pdf`);
+    toast('PDF exported as one page', 'success');
   } catch (err) {
     console.error(err);
-    toast('DOCX export failed. Open Console for error details.', 'error');
+    toast('PDF export failed. Open Console for error details.', 'error');
   } finally {
+    pdfStage.remove();
     if (exportButton) {
       exportButton.disabled = false;
       exportButton.innerHTML = oldButtonHTML;
@@ -1900,43 +1732,16 @@ renderTerms();
   const authUserEmail = document.getElementById('auth-user-email');
 
 
-  // ✅ STRICT ACCESS: only this email can open Proposal Builder
-  const ONLY_ALLOWED_EMAIL = 'tboacademy2@gmail.com';
-  let accessDeniedMessage = '';
-
-  function normalizeEmail(email){
-    return String(email || '').trim().toLowerCase();
-  }
+  // ✅ RESTRICTED ACCESS: only these emails can open Proposal Builder
+  // Add/remove emails here whenever you want to control access.
+  const ALLOWED_EMAILS = [
+    'nikhilmfd24@gmail.com',
+    'aggarwalnikhil185@gmail.com'
+  ].map(email => email.trim().toLowerCase());
 
   function isAllowedUser(user){
-    return !!user && normalizeEmail(user.email) === ONLY_ALLOWED_EMAIL;
-  }
-
-  function hideProtectedViews(){
-    document.body.classList.remove('auth-ok');
-    if(builderView) builderView.style.display = 'none';
-    if(previewView) previewView.style.display = 'none';
-  }
-
-  function showLoginView(message = ''){
-    hideProtectedViews();
-    if(authView) authView.style.display = 'flex';
-    if(authUserBox) authUserBox.style.display = 'none';
-    if(loginPassword) loginPassword.value = '';
-    if(message) showAuthError(message);
-  }
-
-  function showBuilderView(user){
-    document.body.classList.add('auth-ok');
-    if(authView) authView.style.display = 'none';
-    if(previewView) previewView.style.display = 'none';
-    if(builderView) builderView.style.display = 'block';
-
-    if(authUserBox){
-      authUserBox.style.display = 'block';
-      authUserName.textContent = user.displayName || 'Signed in';
-      authUserEmail.textContent = user.email || '';
-    }
+    const email = (user?.email || '').trim().toLowerCase();
+    return ALLOWED_EMAILS.includes(email);
   }
 
   function showAuthError(message){
@@ -2021,36 +1826,36 @@ renderTerms();
     await signOut(auth);
   });
 
-  // Default: protected content is hidden until Firebase confirms the exact allowed email.
-  hideProtectedViews();
-
   onAuthStateChanged(auth, async (user) => {
-    hideProtectedViews();
+    if(user){
+      if(!isAllowedUser(user)){
+        await signOut(auth);
 
-    if(!user){
-      if(authView) authView.style.display = 'flex';
-      if(authUserBox) authUserBox.style.display = 'none';
-      if(loginPassword) loginPassword.value = '';
+        builderView.style.display = 'none';
+        previewView.style.display = 'none';
+        authView.style.display = 'flex';
+        if(authUserBox) authUserBox.style.display = 'none';
+        loginPassword.value = '';
 
-      if(accessDeniedMessage){
-        showAuthError(accessDeniedMessage);
-        accessDeniedMessage = '';
-      }else{
-        clearAuthError();
+        showAuthError('Access denied. This email is not authorized to use Proposal Builder.');
+        return;
       }
-      return;
-    }
 
-    if(!isAllowedUser(user)){
-      const blockedEmail = user.email || 'This account';
-      accessDeniedMessage = `Access denied. ${blockedEmail} is not authorized to use Proposal Builder. Please sign in with ${ONLY_ALLOWED_EMAIL}.`;
-      await signOut(auth);
-      showLoginView(accessDeniedMessage);
-      return;
+      authView.style.display = 'none';
+      previewView.style.display = 'none';
+      builderView.style.display = 'block';
+      if(authUserBox){
+        authUserBox.style.display = 'block';
+        authUserName.textContent = user.displayName || 'Signed in';
+        authUserEmail.textContent = user.email || '';
+      }
+    }else{
+      builderView.style.display = 'none';
+      previewView.style.display = 'none';
+      authView.style.display = 'flex';
+      if(authUserBox) authUserBox.style.display = 'none';
+      loginPassword.value = '';
     }
-
-    clearAuthError();
-    showBuilderView(user);
   });
 </script>
 
