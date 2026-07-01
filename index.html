@@ -1406,8 +1406,18 @@ function jumpTo(id,btn) {
   btn.classList.add('active');
 }
 
-// ── PREVIEW & PRINT ──
+// ── PREVIEW & PDF EXPORT ACCESS GUARD ──
+// IMPORTANT: Builder/preview/export are allowed only after Firebase confirms
+// the exact allowed email and adds body.auth-ok.
+function hasBuilderAccess() {
+  return document.body.classList.contains('auth-ok');
+}
+
 function showPreview() {
+  if (!hasBuilderAccess()) {
+    toast('Access denied. Please sign in with tboacademy2@gmail.com.', 'error');
+    return;
+  }
   buildPreview();
   document.getElementById('view-builder').style.display='none';
   document.getElementById('view-preview').style.display='block';
@@ -1415,12 +1425,23 @@ function showPreview() {
 }
 
 function backToBuilder() {
+  if (!hasBuilderAccess()) {
+    document.getElementById('view-preview').style.display='none';
+    document.getElementById('view-builder').style.display='none';
+    return;
+  }
   document.getElementById('view-preview').style.display='none';
   document.getElementById('view-builder').style.display='block';
   window.scrollTo(0,0);
 }
 
 async function exportOnePagePDF() {
+  // Do not export anything unless Firebase has verified the exact allowed email.
+  if (!hasBuilderAccess()) {
+    toast('Access denied. Please sign in with tboacademy2@gmail.com.', 'error');
+    return;
+  }
+
   /*
     PRODUCTION PDF EXPORT FIX
     -------------------------
@@ -1486,7 +1507,7 @@ async function exportOnePagePDF() {
 
   const clone = sourceDoc.cloneNode(true);
 
-  // Match the visible preview layout first.
+  // Match the visible preview layout exactly before shrinking it into one PDF page.
   const screenWidth = Math.ceil(sourceDoc.getBoundingClientRect().width || sourceDoc.offsetWidth || 1140);
   clone.style.width = screenWidth + 'px';
   clone.style.maxWidth = 'none';
@@ -1801,6 +1822,14 @@ renderTerms();
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearAuthError();
+
+    // Email/password login is blocked before Firebase sign-in if the email is not allowed.
+    // Google login is checked immediately after popup returns inside onAuthStateChanged.
+    if (normalizeEmail(loginEmail.value) !== ONLY_ALLOWED_EMAIL) {
+      showAuthError(`Access denied. Please sign in with ${ONLY_ALLOWED_EMAIL}.`);
+      return;
+    }
+
     try{
       await applyPersistence();
       await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPassword.value);
