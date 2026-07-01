@@ -475,6 +475,34 @@
     background:#FFE8D6;
     border-color:#F0C9A8;
   }
+
+
+  /* PDF EXPORT STABILITY FIX: wrap category text inside a label box.
+     This prevents html2canvas from clipping/misplacing orange category labels
+     inside rowspan table cells when the full proposal is shrunk to one page. */
+  #view-preview .doc td.cat{
+    padding:0 !important;
+    overflow:visible !important;
+    vertical-align:middle !important;
+  }
+  #view-preview .doc td.cat .cat-label{
+    width:100%;
+    min-height:72px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:8px 10px;
+    box-sizing:border-box;
+    font:inherit;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    line-height:1.25;
+    color:inherit;
+    white-space:normal;
+    overflow:visible;
+  }
   #view-preview .doc tbody td{
     padding:11px 14px;
     font-family:inherit;
@@ -1413,6 +1441,33 @@ function hasBuilderAccess() {
   return document.body.classList.contains('auth-ok');
 }
 
+function stabilizeCategoryLabels() {
+  /*
+    html2canvas can mis-render text inside table cells using rowspan,
+    especially after the proposal is proportionally shrunk to one PDF page.
+    This function measures each orange category cell after layout and gives
+    its inner .cat-label a real pixel height, so the text stays centered and
+    is not clipped in the exported PDF.
+  */
+  document.querySelectorAll('#view-preview .doc td.cat').forEach(td => {
+    const label = td.querySelector('.cat-label');
+    if (!label) return;
+
+    td.style.overflow = 'visible';
+    td.style.verticalAlign = 'middle';
+    td.style.padding = '0';
+
+    const h = Math.max(44, Math.round(td.getBoundingClientRect().height) - 2);
+    label.style.height = h + 'px';
+    label.style.minHeight = h + 'px';
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.justifyContent = 'center';
+    label.style.textAlign = 'center';
+    label.style.overflow = 'visible';
+  });
+}
+
 function showPreview() {
   if (!hasBuilderAccess()) {
     toast('Access denied. Please sign in with tboacademy2@gmail.com.', 'error');
@@ -1421,6 +1476,7 @@ function showPreview() {
   buildPreview();
   document.getElementById('view-builder').style.display='none';
   document.getElementById('view-preview').style.display='block';
+  requestAnimationFrame(stabilizeCategoryLabels);
   window.scrollTo(0,0);
 }
 
@@ -1492,6 +1548,7 @@ async function exportOnePagePDF() {
   const previousPreviewDisplay = previewView ? previewView.style.display : '';
   if (builderView) builderView.style.display = 'none';
   if (previewView) previewView.style.display = 'block';
+  stabilizeCategoryLabels();
 
   // A4 landscape dimensions in millimeters.
   const PAGE_WIDTH_MM = 297;
@@ -1523,6 +1580,25 @@ async function exportOnePagePDF() {
       color: #FF6A13 !important;
       border-color: #F5D0B8 !important;
     }
+
+    #view-preview .doc td.cat {
+      padding: 0 !important;
+      overflow: visible !important;
+      vertical-align: middle !important;
+    }
+    #view-preview .doc td.cat .cat-label {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-align: center !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      padding: 8px 10px !important;
+      line-height: 1.25 !important;
+      white-space: normal !important;
+      overflow: visible !important;
+      color: #FF6A13 !important;
+    }
     #view-preview .doc td.cat.cat-stripe-b {
       background-color: #FFE8D6 !important;
       border-color: #F0C9A8 !important;
@@ -1552,7 +1628,9 @@ async function exportOnePagePDF() {
   try {
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
     await new Promise(resolve => requestAnimationFrame(resolve));
-    await new Promise(resolve => setTimeout(resolve, 150));
+    stabilizeCategoryLabels();
+    await new Promise(resolve => setTimeout(resolve, 180));
+    stabilizeCategoryLabels();
 
     const rect = sourceDoc.getBoundingClientRect();
     const fullWidth = Math.ceil(Math.max(sourceDoc.scrollWidth, sourceDoc.offsetWidth, rect.width, 1));
@@ -1669,7 +1747,7 @@ function buildPreview() {
       const s = services[k];
       const tr = document.createElement('tr');
       tr.className = stripeClass;
-      const catCell = k === i ? `<td class="cat ${stripeClass}" rowspan="${span}">${esc(s.cat)}</td>` : '';
+      const catCell = k === i ? `<td class="cat ${stripeClass}" rowspan="${span}"><div class="cat-label">${esc(s.cat)}</div></td>` : '';
       tr.innerHTML = `
         ${catCell}
         <td class="tp">${esc(s.name)}${s.foc ? '<br><span class="p-foc">FOC</span>' : ''}</td>
